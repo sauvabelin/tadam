@@ -1,1 +1,25 @@
 @import "tailwindcss";
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html, body, #root {
+  margin: 0 !important;
+  padding: 0 !important;
+  width: 100%;
+  height: 100%;
+}
+
+body {
+  overflow-x: hidden;
+  background: repeating-linear-gradient(
+    90deg,
+    #ffffff,
+    #ffffff 20px,
+    #e63946 20px,
+    #e63946 40px
+  );
+}

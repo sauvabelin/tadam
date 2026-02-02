@@ -16,14 +16,8 @@ import { Hike } from './components/Hike'
 
 // Page dimensions from the background SVG (fixed coordinate system)
 const PAGE_WIDTH = 756
-const PAGE_HEIGHT = 12868
+const PAGE_HEIGHT = 12068
 
-/**
- * Element positioning config (all values in pixels within the 756x12868 coordinate system)
- * - bottomY: distance from page top to element's BOTTOM CENTER
- * - width: element width
- * - offsetX: horizontal offset from page center (positive = right)
- */
 type ElementConfig = {
   bottomY: number
   width: number
@@ -31,36 +25,27 @@ type ElementConfig = {
 }
 
 const elements: Record<string, ElementConfig> = {
-  informations:      { bottomY: 2800,  width: 380, offsetX: 0 },
-  bienvenue:         { bottomY: 3950,  width: 350, offsetX: 0 },
-  train:             { bottomY: 5150,  width: 420, offsetX: -90},
-  chapiteau:         { bottomY: 5710,  width: 550, offsetX: 0 },
-  lettres:           { bottomY: 6500,  width: 400, offsetX: 0 },
-  inspectionDesSacs: { bottomY: 7550,  width: 320, offsetX: -50 },
-  hike:              { bottomY: 8790,  width: 220, offsetX: 140 },
-  familles:          { bottomY: 9750,  width: 360, offsetX: 80 },
-  concert:           { bottomY: 10550, width: 450, offsetX: 0 },
-  bouffe:            { bottomY: 11200, width: 430, offsetX: -50 },
-  journal:           { bottomY: 11600, width: 270, offsetX: 60 },
-  // contact:        { bottomY: 5575,  width: 175, offsetX: 0 },
-  // dons:           { bottomY: 5734,  width: 110, offsetX: 0 },
+  informations:      { bottomY: 2400,  width: 380, offsetX: 0 },
+  bienvenue:         { bottomY: 3550,  width: 350, offsetX: 0 },
+  train:             { bottomY: 4750,  width: 420, offsetX: -90 },
+  chapiteau:         { bottomY: 5310,  width: 550, offsetX: 0 },
+  lettres:           { bottomY: 6100,  width: 400, offsetX: 0 },
+  inspectionDesSacs: { bottomY: 7150,  width: 320, offsetX: -50 },
+  hike:              { bottomY: 8390,  width: 220, offsetX: 140 },
+  familles:          { bottomY: 9350,  width: 360, offsetX: 80 },
+  concert:           { bottomY: 10150, width: 450, offsetX: 0 },
+  bouffe:            { bottomY: 10900, width: 430, offsetX: -50 },
+  journal:           { bottomY: 11500, width: 270, offsetX: 60 },
 }
 
-/**
- * Generate style for bottom-center anchored element
- * Uses pixel values - the entire container will be scaled together
- */
 function getElementStyle(config: ElementConfig): CSSProperties {
   const { bottomY, width, offsetX } = config
-
   return {
     position: 'absolute',
     top: bottomY,
     left: PAGE_WIDTH / 2 + offsetX,
     width: width,
-    // Anchor at bottom center
     transform: 'translate(-50%, -100%)',
-    // Transform origin for animations
     transformOrigin: 'bottom center',
   }
 }
@@ -75,91 +60,47 @@ function App() {
     return () => window.removeEventListener('resize', updateScale)
   }, [])
 
+  const scaledWidth = PAGE_WIDTH * scale
+  const scaledHeight = PAGE_HEIGHT * scale
+
   return (
     <div
-      className="overflow-x-hidden"
-      style={{ backgroundColor: '#6b6b6bff', minHeight: '100vh' }}
+      style={{
+        position: 'relative',
+        width: scaledWidth,
+        height: scaledHeight,
+        margin: '0 auto',
+        overflow: 'hidden',
+        boxShadow: 'inset 0 0 20px 10px rgba(0, 0, 0, 0.5)',
+      }}
     >
-      {/* Wrapper with scaled dimensions for proper centering */}
       <div
-        className="mx-auto"
         style={{
-          width: PAGE_WIDTH * scale,
-          height: PAGE_HEIGHT * scale,
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          width: PAGE_WIDTH,
+          height: PAGE_HEIGHT,
+          transform: `scale(${scale})`,
+          transformOrigin: 'top left',
         }}
       >
-        {/* Scaled container - everything inside uses fixed pixel coordinates */}
-        <div
-          className="relative"
-          style={{
-            width: PAGE_WIDTH,
-            height: PAGE_HEIGHT,
-            transform: `scale(${scale})`,
-            transformOrigin: 'top left',
-          }}
-        >
-        {/* Background - exact size of coordinate system */}
         <Background
-          className="absolute z-0"
+          className="absolute border-4"
           style={{ top: 0, left: 0, width: PAGE_WIDTH, height: PAGE_HEIGHT }}
         />
 
-        {/* Elements - all positioned in pixel coordinates, scale together with container */}
-        <Informations
-          className="z-10"
-          style={getElementStyle(elements.informations)}
-        />
-
-        <Bienvenue
-          className="z-10"
-          style={getElementStyle(elements.bienvenue)}
-        />
-
-        <Train
-          className="z-10"
-          style={getElementStyle(elements.train)}
-        />
-
-        <Chapiteau
-          className="z-10"
-          style={getElementStyle(elements.chapiteau)}
-        />
-
-        <Lettres
-          className="z-10"
-          style={getElementStyle(elements.lettres)}
-        />
-
-        <InspectionDesSacs
-          className="z-10"
-          style={getElementStyle(elements.inspectionDesSacs)}
-        />
-
-        <Hike
-          className="z-10"
-          style={getElementStyle(elements.hike)}
-        />
-
-        <Familles
-          className="z-10"
-          style={getElementStyle(elements.familles)}
-        />
-
-        <Concert
-          className="z-10"
-          style={getElementStyle(elements.concert)}
-        />
-
-        <Bouffe
-          className="z-10"
-          style={getElementStyle(elements.bouffe)}
-        />
-
-        <Journal
-          className="z-10"
-          style={getElementStyle(elements.journal)}
-        />
-        </div>
+        <Informations className="z-10" style={getElementStyle(elements.informations)} />
+        <Bienvenue className="z-10" style={getElementStyle(elements.bienvenue)} />
+        <Train className="z-10" style={getElementStyle(elements.train)} />
+        <Chapiteau className="z-10" style={getElementStyle(elements.chapiteau)} />
+        <Lettres className="z-10" style={getElementStyle(elements.lettres)} />
+        <InspectionDesSacs className="z-10" style={getElementStyle(elements.inspectionDesSacs)} />
+        <Hike className="z-10" style={getElementStyle(elements.hike)} />
+        <Familles className="z-10" style={getElementStyle(elements.familles)} />
+        <Concert className="z-10" style={getElementStyle(elements.concert)} />
+        <Bouffe className="z-10" style={getElementStyle(elements.bouffe)} />
+        <Journal className="z-10" style={getElementStyle(elements.journal)} />
       </div>
     </div>
   )
