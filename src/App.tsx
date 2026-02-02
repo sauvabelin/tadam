@@ -89,17 +89,19 @@ type NavSection = {
 }
 
 const navSections: NavSection[] = [
-  { id: 'informations',      label: 'Infos',       position: 2700,  rangeUp: 500,  rangeDown: 500 },
-  { id: 'bienvenue',         label: 'Bienvenue',   position: 3750,  rangeUp: 500,  rangeDown: 500 },
-  { id: 'train',             label: 'Train',       position: 4950,  rangeUp: 500,  rangeDown: 100 },
-  { id: 'chapiteau',         label: 'Chapiteau',   position: 5410,  rangeUp: 500,  rangeDown: 500 },
-  { id: 'lettres',           label: 'Lettres',     position: 6100,  rangeUp: 500,  rangeDown: 500 },
-  { id: 'inspectionDesSacs', label: 'Inspection',  position: 7150,  rangeUp: 500,  rangeDown: 500 },
-  { id: 'hike',              label: 'Hike',        position: 8390,  rangeUp: 500,  rangeDown: 500 },
-  { id: 'familles',          label: 'Familles',    position: 9350,  rangeUp: 500,  rangeDown: 500 },
-  { id: 'concert',           label: 'Concert',     position: 10150, rangeUp: 500,  rangeDown: 500 },
-  { id: 'bouffe',            label: 'Bouffe',      position: 10900, rangeUp: 500,  rangeDown: 500 },
-  { id: 'journal',           label: 'Journal',     position: 11500, rangeUp: 500,  rangeDown: 500 },
+  { id: 'bienvenue',         label: 'Bienvenue',   position: 2690,  rangeUp: 500,  rangeDown: 500 },
+  { id: 'informations',      label: 'Infos',       position: 3830,  rangeUp: 500,  rangeDown: 500 },
+  { id: 'train',             label: 'Journée des parents',       position: 4950,  rangeUp: 500,  rangeDown: 100 },
+  { id: 'chapiteau',         label: 'Trailer',   position: 5540,  rangeUp: 500,  rangeDown: 500 },
+  { id: 'lettres',           label: 'Lettres',     position: 6340,  rangeUp: 500,  rangeDown: 500 },
+  { id: 'inspectionDesSacs', label: 'Inspection des Sacs',  position: 7500,  rangeUp: 500,  rangeDown: 500 },
+  { id: 'hike',              label: 'Hike',        position: 8750,  rangeUp: 500,  rangeDown: 500 },
+  { id: 'familles',          label: 'Familles',    position: 9450,  rangeUp: 300,  rangeDown: 500 },
+  { id: 'contact',           label: 'Contact',     position: 9900, rangeUp: 200,  rangeDown: 500 },
+  { id: 'concert',           label: 'Concert',     position: 10250, rangeUp: 500,  rangeDown: 500 },
+  { id: 'bouffe',            label: 'Bouffe',      position: 10940, rangeUp: 200,  rangeDown: 500 },
+  { id: 'dons',              label: 'Dons',        position: 11400, rangeUp: 200,  rangeDown: 500 },
+  { id: 'journal',           label: 'Journal',     position: 12000, rangeUp: 500,  rangeDown: 500 },
 ]
 
 function getElementStyle(config: ElementConfig): CSSProperties {
