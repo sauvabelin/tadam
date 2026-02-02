@@ -7,5 +7,8 @@ export default defineConfig({
   build: {
     outDir: 'dist',
     assetsDir: 'assets'
+  },
+  server: {
+    allowedHosts: ["ede8e98a2733.ngrok.app"]
   }
 })
