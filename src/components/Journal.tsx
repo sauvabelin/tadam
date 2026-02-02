@@ -16,6 +16,7 @@ export const Journal: React.FC<Props> = ({ className, style, bulleOffset }) => (
     />
     {bulleOffset && (
       <Bulle
+        id="journal"
         src="/assets/jounaux_bulle.svg"
         alt="Journaux"
         offsetX={bulleOffset.x}

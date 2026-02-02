@@ -16,6 +16,7 @@ export const Hike: React.FC<Props> = ({ className, style, bulleOffset }) => (
     />
     {bulleOffset && (
       <Bulle
+        id="hike"
         src="/assets/hike_bulle.svg"
         alt="Hike"
         offsetX={bulleOffset.x}

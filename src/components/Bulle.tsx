@@ -1,6 +1,9 @@
 import { CSSProperties, useState } from 'react'
+import { BulleId } from '../types'
+import { useModal } from '../context/ModalContext'
 
 interface Props {
+  id: BulleId
   src: string
   alt: string
   offsetX: number
@@ -9,14 +12,20 @@ interface Props {
   style?: CSSProperties
 }
 
-export const Bulle: React.FC<Props> = ({ src, alt, offsetX, offsetY, width, style }) => {
+export const Bulle: React.FC<Props> = ({ id, src, alt, offsetX, offsetY, width, style }) => {
   const [hovered, setHovered] = useState(false)
+  const { openModalAt } = useModal()
+
+  const handleClick = (e: React.MouseEvent) => {
+    openModalAt(id, e.clientX, e.clientY)
+  }
 
   return (
     <img
       src={src}
       alt={alt}
       className="max-w-none"
+      onClick={handleClick}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
       style={{

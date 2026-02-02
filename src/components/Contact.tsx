@@ -16,6 +16,7 @@ export const Contact: React.FC<Props> = ({ className, style, bulleOffset }) => (
     />
     {bulleOffset && (
       <Bulle
+        id="contact"
         src="/assets/contact_bulle.svg"
         alt="Contact"
         offsetX={bulleOffset.x}

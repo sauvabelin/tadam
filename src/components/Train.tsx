@@ -16,6 +16,7 @@ export const Train: React.FC<Props> = ({ className, style, bulleOffset }) => (
     />
     {bulleOffset && (
       <Bulle
+        id="train"
         src="/assets/journee_des_parents_bulle.svg"
         alt="Journee des parents"
         offsetX={bulleOffset.x}

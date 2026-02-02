@@ -1,5 +1,12 @@
 // Shared types for mobile and desktop apps
 
+export type BulleId =
+  | 'informations' | 'train' | 'chapiteau' | 'lettres'
+  | 'inspectionDesSacs' | 'hike' | 'concert' | 'bouffe'
+  | 'journal' | 'contact' | 'dons'
+  | 'inscription' | 'bienvenue'
+  | 'patatra' | 'fantasia' | 'lamifa' | 'zampazzi'
+
 export type ElementConfig = {
   bottomY: number
   width: number

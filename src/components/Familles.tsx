@@ -27,6 +27,7 @@ export const Familles: React.FC<Props> = ({ className, style, bulleOffsets }) =>
     />
     {bulleOffsets?.patatra && (
       <Bulle
+        id="patatra"
         src="/assets/patatra_bulle.svg"
         alt="Patatra"
         offsetX={bulleOffsets.patatra.x}
@@ -36,6 +37,7 @@ export const Familles: React.FC<Props> = ({ className, style, bulleOffsets }) =>
     )}
     {bulleOffsets?.fantasia && (
       <Bulle
+        id="fantasia"
         src="/assets/fantasia_bulle.svg"
         alt="Fantasia"
         offsetX={bulleOffsets.fantasia.x}
@@ -45,6 +47,7 @@ export const Familles: React.FC<Props> = ({ className, style, bulleOffsets }) =>
     )}
     {bulleOffsets?.lamifa && (
       <Bulle
+        id="lamifa"
         src="/assets/lamifa_bulle.svg"
         alt="Lamifa"
         offsetX={bulleOffsets.lamifa.x}
@@ -54,6 +57,7 @@ export const Familles: React.FC<Props> = ({ className, style, bulleOffsets }) =>
     )}
     {bulleOffsets?.zampazzi && (
       <Bulle
+        id="zampazzi"
         src="/assets/zampazzi_bulle.svg"
         alt="Zampazzi"
         offsetX={bulleOffsets.zampazzi.x}
