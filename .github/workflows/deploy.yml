@@ -39,5 +39,14 @@ jobs:
             **/.git*
             **/.git*/**
             **/node_modules/**
+            **/src/**
             **/.env*
             **/Natel_image de référence.png
+            index.html
+            package.json
+            package-lock.json
+            tsconfig.json
+            tsconfig.node.json
+            vite.config.ts
+            tailwind.config.js
+            postcss.config.js
