@@ -25,6 +25,7 @@ export const Bienvenue: React.FC<Props> = ({ className, style, bulleOffsets }) =
     />
     {bulleOffsets?.inscription && (
       <Bulle
+        id="inscription"
         src="/assets/inscription_bulle.svg"
         alt="Inscription"
         offsetX={bulleOffsets.inscription.x}
@@ -34,6 +35,7 @@ export const Bienvenue: React.FC<Props> = ({ className, style, bulleOffsets }) =
     )}
     {bulleOffsets?.bienvenue && (
       <Bulle
+        id="bienvenue"
         src="/assets/bienvenue_bulle.svg"
         alt="Bienvenue"
         offsetX={bulleOffsets.bienvenue.x}

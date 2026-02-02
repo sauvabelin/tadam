@@ -16,6 +16,7 @@ export const Concert: React.FC<Props> = ({ className, style, bulleOffset }) => (
     />
     {bulleOffset && (
       <Bulle
+        id="concert"
         src="/assets/concert_bulle.svg"
         alt="Concert"
         offsetX={bulleOffset.x}
