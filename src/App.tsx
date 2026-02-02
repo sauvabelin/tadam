@@ -33,7 +33,7 @@ type ElementConfig = {
 const elements: Record<string, ElementConfig> = {
   informations:      { bottomY: 2800,  width: 380, offsetX: 0 },
   bienvenue:         { bottomY: 3950,  width: 350, offsetX: 0 },
-  train:             { bottomY: 5140,  width: 420, offsetX: -100},
+  train:             { bottomY: 5150,  width: 420, offsetX: -90},
   chapiteau:         { bottomY: 5710,  width: 550, offsetX: 0 },
   lettres:           { bottomY: 6500,  width: 400, offsetX: 0 },
   inspectionDesSacs: { bottomY: 7550,  width: 320, offsetX: -50 },
