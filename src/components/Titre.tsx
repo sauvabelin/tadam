@@ -10,6 +10,9 @@ export const Titre: React.FC<Props> = ({ className, style }) => (
     src="/assets/titre.svg"
     alt="Tadam"
     className={className}
-    style={style}
+    style={{
+      filter: 'drop-shadow(4px 4px 8px rgba(0, 0, 0, 0.5))',
+      ...style,
+    }}
   />
 )

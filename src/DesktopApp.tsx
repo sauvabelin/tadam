@@ -56,12 +56,10 @@ export function DesktopApp() {
   const [scale, setScale] = useState(1)
   const containerRef = useRef<HTMLDivElement>(null)
 
-  // Calculate scale to fit the background in the viewport
+  // Calculate scale based on width only, allow vertical scroll if needed
   useEffect(() => {
     const updateScale = () => {
-      const scaleX = window.innerWidth / PAGE_WIDTH
-      const scaleY = window.innerHeight / PAGE_HEIGHT
-      setScale(Math.min(scaleX, scaleY))
+      setScale(window.innerWidth / PAGE_WIDTH)
     }
     updateScale()
     window.addEventListener('resize', updateScale)
@@ -86,20 +84,7 @@ export function DesktopApp() {
   const scaledHeight = PAGE_HEIGHT * scale
 
   return (
-    <div
-      style={{
-        position: 'fixed',
-        top: 0,
-        left: 0,
-        width: '100vw',
-        height: '100vh',
-        overflow: 'hidden',
-        background: '#1a1a2e',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-      }}
-    >
+    <>
       {/* Debug Display */}
       {config.showDebug && (
         <div
@@ -129,7 +114,8 @@ export function DesktopApp() {
           position: 'relative',
           width: scaledWidth,
           height: scaledHeight,
-          overflow: 'visible',
+          margin: '0 auto',
+          overflow: 'hidden',
         }}
       >
         <div
@@ -158,7 +144,7 @@ export function DesktopApp() {
 
           <Informations className="z-10" style={getElementStyle(elements.informations)} bulleOffset={bulleOffsets.informations} />
           <Bienvenue className="z-10" style={getElementStyle(elements.bienvenue)} bulleOffsets={bienvenueBulleOffsets} />
-          <Train className="z-10" style={getElementStyle(elements.train)} bulleOffset={bulleOffsets.train} />
+          <Train className="z-11" style={getElementStyle(elements.train)} bulleOffset={bulleOffsets.train} />
           <Chapiteau className="z-10" style={getElementStyle(elements.chapiteau)} bulleOffset={bulleOffsets.chapiteau} />
           <Lettres className="z-10" style={getElementStyle(elements.lettres)} bulleOffset={bulleOffsets.lettres} />
           <InspectionDesSacs className="z-10" style={getElementStyle(elements.inspectionDesSacs)} bulleOffset={bulleOffsets.inspectionDesSacs} />
@@ -170,7 +156,20 @@ export function DesktopApp() {
           <Contact className="z-10" style={getElementStyle(elements.contact)} bulleOffset={bulleOffsets.contact} />
           <Dons className="z-10" style={getElementStyle(elements.dons)} bulleOffset={bulleOffsets.dons} />
         </div>
+
+        {/* Inset shadow overlay */}
+        <div
+          style={{
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            width: '100%',
+            height: '100%',
+            boxShadow: 'inset 0 0 20px 10px rgba(0, 0, 0, 0.5)',
+            pointerEvents: 'none',
+          }}
+        />
       </div>
-    </div>
+    </>
   )
 }

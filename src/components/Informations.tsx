@@ -16,7 +16,7 @@ export const Informations: React.FC<Props> = ({ className, style, bulleOffset })
     />
     {bulleOffset && (
       <Bulle
-        src="/assets/informations generales_bulle.svg"
+        src="/assets/informations_generales_bulle.svg"
         alt="Informations"
         offsetX={bulleOffset.x}
         offsetY={bulleOffset.y}

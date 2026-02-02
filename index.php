@@ -7,8 +7,8 @@
 $distPath = __DIR__ . '/dist';
 $requestUri = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
 
-// Remove leading slash for file path
-$filePath = ltrim($requestUri, '/');
+// Remove leading slash and decode URL-encoded characters (spaces, etc.)
+$filePath = urldecode(ltrim($requestUri, '/'));
 
 // Check if requesting a static asset from dist
 if ($filePath && file_exists($distPath . '/' . $filePath) && !is_dir($distPath . '/' . $filePath)) {

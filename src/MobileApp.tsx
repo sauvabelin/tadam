@@ -267,9 +267,7 @@ export function MobileApp() {
           position: 'relative',
           width: scaledWidth,
           height: scaledHeight,
-          margin: '0 auto',
           overflow: 'hidden',
-          boxShadow: 'inset 0 0 20px 10px rgba(0, 0, 0, 0.5)',
         }}
       >
         <div
@@ -284,7 +282,7 @@ export function MobileApp() {
           }}
         >
           <Background
-            className="absolute border-4"
+            className="absolute"
             style={{ top: 0, left: 0, width: PAGE_WIDTH, height: PAGE_HEIGHT }}
           />
 
@@ -302,6 +300,20 @@ export function MobileApp() {
           <Journal className="z-10" style={getElementStyle(elements.journal)} bulleOffset={bulleOffsets.journal} />
           <Contact className="z-10" style={getElementStyle(elements.contact)} bulleOffset={bulleOffsets.contact} />
           <Dons className="z-10" style={getElementStyle(elements.dons)} bulleOffset={bulleOffsets.dons} />
+
+          {/* Inset shadow overlay - inside scaled content */}
+          <div
+            style={{
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              width: PAGE_WIDTH,
+              height: PAGE_HEIGHT,
+              boxShadow: 'inset 0 0 0 5px black, inset 0 0 20px 15px rgba(0, 0, 0, 0.3)',
+              pointerEvents: 'none',
+              zIndex: 20,
+            }}
+          />
         </div>
       </div>
     </>

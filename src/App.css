@@ -13,13 +13,19 @@ html, body, #root {
   height: 100%;
 }
 
+#root {
+  display: flex;
+  justify-content: center;
+}
+
 body {
   overflow-x: hidden;
   background: repeating-linear-gradient(
     90deg,
-    #ffffff,
-    #ffffff 20px,
-    #e63946 20px,
-    #e63946 40px
+    #ECE5DE,
+    #ECE5DE 40px,
+    #902212 40px,
+    #902212 80px
   );
+  background-position: center;
 }

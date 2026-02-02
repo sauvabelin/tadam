@@ -16,7 +16,7 @@ export const InspectionDesSacs: React.FC<Props> = ({ className, style, bulleOffs
     />
     {bulleOffset && (
       <Bulle
-        src="/assets/inspection des sacs_bulle.svg"
+        src="/assets/inspection_des_sacs_bulle.svg"
         alt="Inspection des sacs"
         offsetX={bulleOffset.x}
         offsetY={bulleOffset.y}
