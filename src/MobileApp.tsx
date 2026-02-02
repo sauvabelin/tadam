@@ -33,7 +33,7 @@ const elements: Record<string, ElementConfig> = {
   familles:          { bottomY: 9250,  width: componentWidths.familles, offsetX: 80 },
   concert:           { bottomY: 10100, width: componentWidths.concert, offsetX: 0 },
   bouffe:            { bottomY: 10800, width: componentWidths.bouffe, offsetX: -50 },
-  journal:           { bottomY: 11800, width: componentWidths.journal, offsetX: 60 },
+  journal:           { bottomY: 11750, width: componentWidths.journal, offsetX: 60 },
   contact:           { bottomY: 9660,  width: componentWidths.contact, offsetX: 180 },
   dons:              { bottomY: 11200, width: componentWidths.dons, offsetX: -140 },
 }
