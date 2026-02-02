@@ -25,6 +25,13 @@ jobs:
       - name: Build project
         run: npm run build
 
+      - name: Prepare deployment
+        run: |
+          mkdir deploy
+          cp -r dist deploy/
+          cp index.php deploy/
+          cp .htaccess deploy/
+
       - name: Deploy via FTP
         uses: SamKirkland/FTP-Deploy-Action@v4.3.5
         with:
@@ -33,20 +40,5 @@ jobs:
           password: ${{ secrets.FTP_PASSWORD }}
           port: 21
           protocol: ftps
-          local-dir: ./
+          local-dir: ./deploy/
           server-dir: ${{ secrets.FTP_REMOTE_PATH }}
-          exclude: |
-            **/.git*
-            **/.git*/**
-            **/node_modules/**
-            **/src/**
-            **/.env*
-            **/Natel_image de référence.png
-            index.html
-            package.json
-            package-lock.json
-            tsconfig.json
-            tsconfig.node.json
-            vite.config.ts
-            tailwind.config.js
-            postcss.config.js
