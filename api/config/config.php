@@ -5,7 +5,21 @@
  * Set these in .env file or Docker environment.
  */
 
-// Helper to get env var from multiple sources (Apache doesn't pass env to PHP by default)
+// Load .env file if it exists (for traditional PHP hosting)
+$envPaths = [
+    __DIR__ . '/../../.env',  // Root of deployment
+    __DIR__ . '/../.env',     // api/.env
+];
+
+foreach ($envPaths as $envPath) {
+    if (file_exists($envPath)) {
+        $dotenv = Dotenv\Dotenv::createImmutable(dirname($envPath));
+        $dotenv->safeLoad();
+        break;
+    }
+}
+
+// Helper to get env var from multiple sources
 function env(string $key, string $default = ''): string
 {
     return $_ENV[$key] ?? $_SERVER[$key] ?? getenv($key) ?: $default;
