@@ -329,30 +329,50 @@ if ($method === 'POST' && $path === '/images') {
 
 // Route: GET /images - List all images
 if ($method === 'GET' && $path === '/images') {
-    $images = $imageController->list();
-    jsonResponse($images);
+    try {
+        $images = $imageController->list();
+        jsonResponse($images);
+    } catch (\Exception $e) {
+        error_log('Failed to list images: ' . $e->getMessage());
+        errorResponse('Failed to list images: ' . $e->getMessage(), 500);
+    }
 }
 
 // Route: GET /images/unused - List unused images
 if ($method === 'GET' && $path === '/images/unused') {
-    $images = $imageController->getUnusedImages();
-    jsonResponse($images);
+    try {
+        $images = $imageController->getUnusedImages();
+        jsonResponse($images);
+    } catch (\Exception $e) {
+        error_log('Failed to get unused images: ' . $e->getMessage());
+        errorResponse('Failed to get unused images: ' . $e->getMessage(), 500);
+    }
 }
 
 // Route: DELETE /images/unused - Delete all unused images
 if ($method === 'DELETE' && $path === '/images/unused') {
-    $count = $imageController->deleteUnusedImages();
-    jsonResponse(['deleted' => $count]);
+    try {
+        $count = $imageController->deleteUnusedImages();
+        jsonResponse(['deleted' => $count]);
+    } catch (\Exception $e) {
+        error_log('Failed to delete unused images: ' . $e->getMessage());
+        errorResponse('Failed to delete unused images: ' . $e->getMessage(), 500);
+    }
 }
 
 // Route: DELETE /images/{id} - Delete single image
 if ($method === 'DELETE' && preg_match('#^/images/(\d+)$#', $path, $matches)) {
     $imageId = (int)$matches[1];
 
-    if ($imageController->delete($imageId)) {
-        jsonResponse(['success' => true]);
-    } else {
-        errorResponse('Image not found', 404);
+    try {
+        if ($imageController->delete($imageId)) {
+            jsonResponse(['success' => true]);
+        } else {
+            errorResponse('Image not found', 404);
+        }
+    } catch (\Exception $e) {
+        error_log('Failed to delete image: ' . $e->getMessage());
+        errorResponse('Failed to delete image: ' . $e->getMessage(), 500);
     }
 }
 
