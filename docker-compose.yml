@@ -8,10 +8,10 @@ services:
       - ./dist/uploads:/var/www/html/uploads
     environment:
       - MYSQL_DATABASE_URL=${MYSQL_DATABASE_URL:-}
-      - DB_HOST=db
-      - DB_NAME=${MYSQL_DATABASE:-tadam}
-      - DB_USER=${MYSQL_USER:-tadam}
-      - DB_PASS=${MYSQL_PASSWORD:-tadampassword}
+      - MYSQL_HOST=db
+      - MYSQL_DATABASE=${MYSQL_DATABASE:-tadam}
+      - MYSQL_USER=${MYSQL_USER:-tadam}
+      - MYSQL_PASSWORD=${MYSQL_PASSWORD:-tadampassword}
       - ADMIN_PASSWORD=${ADMIN_PASSWORD:-acriter1912}
       - SESSION_EXPIRY=${SESSION_EXPIRY:-86400}
       - ALLOWED_ORIGINS=${ALLOWED_ORIGINS:-http://localhost:5173,http://localhost:8080}

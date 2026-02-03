@@ -42,11 +42,11 @@ $dbConfig = parseDatabaseUrl($databaseUrl);
 if ($dbConfig === null) {
     // Fall back to individual environment variables
     $dbConfig = [
-        'host' => env('DB_HOST', 'db'),
-        'port' => (int) env('DB_PORT', '3306'),
-        'name' => env('DB_NAME', 'tadam'),
-        'user' => env('DB_USER', 'tadam'),
-        'pass' => env('DB_PASS', 'tadampassword'),
+        'host' => env('MYSQL_HOST', 'localhost'),
+        'port' => (int) env('MYSQL_PORT', '3306'),
+        'name' => env('MYSQL_DATABASE', 'tadam'),
+        'user' => env('MYSQL_USER', 'tadam'),
+        'pass' => env('MYSQL_PASSWORD', ''),
     ];
 }
 

@@ -10,7 +10,7 @@ RUN apt-get update && apt-get install -y libzip-dev \
 RUN a2enmod rewrite
 
 # Configure Apache to pass environment variables and allow .htaccess
-RUN echo 'PassEnv MYSQL_DATABASE_URL DB_HOST DB_PORT DB_NAME DB_USER DB_PASS ADMIN_PASSWORD SESSION_EXPIRY ALLOWED_ORIGINS\n\
+RUN echo 'PassEnv MYSQL_DATABASE_URL MYSQL_HOST MYSQL_PORT MYSQL_DATABASE MYSQL_USER MYSQL_PASSWORD ADMIN_PASSWORD SESSION_EXPIRY ALLOWED_ORIGINS\n\
 <Directory /var/www/html>\n\
     AllowOverride All\n\
     Require all granted\n\
