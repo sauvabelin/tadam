@@ -1,27 +1,38 @@
 # Tadam Website
 
-## Run locally
+## Local Development
+
+Start the full stack with Docker:
+
+```bash
+docker-compose up
+```
+
+This starts:
+- Frontend at http://localhost:5173
+- API at http://localhost:8080/api
+- MySQL database
+
+Or run frontend only:
 
 ```bash
 npm install
 npm run dev
 ```
 
-## Build for production
+## Production Deployment
 
-```bash
-npm run build
+1. Set up `.env` on server with database credentials and admin password
+
+2. Push to `master` branch - GitHub Actions deploys automatically via FTP
+
+3. Migrations run automatically on first API request
+
+## Project Structure
+
 ```
-
-## Deploy with PHP
-
-1. Build the project: `npm run build`
-2. Upload `dist/` and `index.php` to your PHP server
-3. Point your web server to `index.php`
-
-## Test PHP locally
-
-```bash
-npm run build
-php -S localhost:8000 index.php
+├── src/           # React frontend
+├── api/           # PHP backend API
+├── dist/          # Built frontend (generated)
+└── index.php      # SPA entry point
 ```

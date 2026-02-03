@@ -9,6 +9,12 @@ export default defineConfig({
     assetsDir: 'assets'
   },
   server: {
-    allowedHosts: ["ede8e98a2733.ngrok.app"]
+    allowedHosts: true,
+    proxy: {
+      '/api': {
+        target: 'http://localhost:8080',
+        changeOrigin: true,
+      }
+    }
   }
 })

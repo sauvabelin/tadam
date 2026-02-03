@@ -1,26 +1,24 @@
 services:
   web:
-    image: php:8.3-apache
+    build: ./dist
     container_name: tadam-web
     ports:
       - "8080:80"
     volumes:
-      - ./:/var/www/html
-    working_dir: /var/www/html
+      - ./dist/uploads:/var/www/html/uploads
     environment:
-      - APACHE_DOCUMENT_ROOT=/var/www/html
+      - MYSQL_DATABASE_URL=${MYSQL_DATABASE_URL:-}
+      - DB_HOST=db
+      - DB_NAME=${MYSQL_DATABASE:-tadam}
+      - DB_USER=${MYSQL_USER:-tadam}
+      - DB_PASS=${MYSQL_PASSWORD:-tadampassword}
+      - ADMIN_PASSWORD=${ADMIN_PASSWORD:-acriter1912}
+      - SESSION_EXPIRY=${SESSION_EXPIRY:-86400}
+      - ALLOWED_ORIGINS=${ALLOWED_ORIGINS:-http://localhost:5173,http://localhost:8080}
     depends_on:
       - db
     networks:
       - tadam-network
-    command: >
-      bash -c "a2enmod rewrite &&
-               echo '<Directory /var/www/html>
-                 AllowOverride All
-                 Require all granted
-               </Directory>' > /etc/apache2/conf-available/custom.conf &&
-               a2enconf custom &&
-               apache2-foreground"
 
   db:
     image: mariadb:11

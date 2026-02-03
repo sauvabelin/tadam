@@ -1,0 +1,13 @@
+{
+  "name": "tadam/api",
+  "description": "Tadam Admin Panel API",
+  "require": {
+    "php": ">=8.1",
+    "sergeytsalkov/meekrodb": "^2.4"
+  },
+  "autoload": {
+    "psr-4": {
+      "Tadam\\": "src/"
+    }
+  }
+}

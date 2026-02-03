@@ -8,17 +8,26 @@ interface AdminLoginProps {
 export function AdminLogin({ onSuccess }: AdminLoginProps) {
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
+  const [isSubmitting, setIsSubmitting] = useState(false)
   const { login } = useAuth()
 
-  const handleSubmit = (e: FormEvent) => {
+  const handleSubmit = async (e: FormEvent) => {
     e.preventDefault()
     setError('')
+    setIsSubmitting(true)
 
-    if (login(password)) {
-      onSuccess()
-    } else {
-      setError('Mot de passe incorrect')
-      setPassword('')
+    try {
+      const success = await login(password)
+      if (success) {
+        onSuccess()
+      } else {
+        setError('Mot de passe incorrect')
+        setPassword('')
+      }
+    } catch {
+      setError('Erreur de connexion')
+    } finally {
+      setIsSubmitting(false)
     }
   }
 
@@ -83,6 +92,7 @@ export function AdminLogin({ onSuccess }: AdminLoginProps) {
             id="password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
+            disabled={isSubmitting}
             style={{
               width: '100%',
               padding: '0.75rem 1rem',
@@ -92,6 +102,7 @@ export function AdminLogin({ onSuccess }: AdminLoginProps) {
               outline: 'none',
               background: '#FFFEF5',
               boxSizing: 'border-box',
+              opacity: isSubmitting ? 0.7 : 1,
             }}
             placeholder="Entrez le mot de passe"
             autoFocus
@@ -117,26 +128,29 @@ export function AdminLogin({ onSuccess }: AdminLoginProps) {
 
         <button
           type="submit"
+          disabled={isSubmitting}
           style={{
             width: '100%',
             padding: '0.75rem 1rem',
             fontSize: '1rem',
             fontWeight: 600,
             color: '#FFFEF5',
-            background: '#902212',
+            background: isSubmitting ? '#6b4a44' : '#902212',
             border: '3px solid #2D2D2D',
             borderRadius: '0.5rem',
-            cursor: 'pointer',
+            cursor: isSubmitting ? 'not-allowed' : 'pointer',
             transition: 'transform 0.2s',
           }}
           onMouseEnter={(e) => {
-            e.currentTarget.style.transform = 'translateY(-2px)'
+            if (!isSubmitting) {
+              e.currentTarget.style.transform = 'translateY(-2px)'
+            }
           }}
           onMouseLeave={(e) => {
             e.currentTarget.style.transform = 'translateY(0)'
           }}
         >
-          Connexion
+          {isSubmitting ? 'Connexion...' : 'Connexion'}
         </button>
       </form>
     </div>

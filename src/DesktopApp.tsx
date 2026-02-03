@@ -1,4 +1,4 @@
-import { CSSProperties, useEffect, useState, useRef } from 'react'
+import { CSSProperties, useEffect, useState, useRef, useCallback, MouseEvent as ReactMouseEvent } from 'react'
 import { config } from './config'
 import { Bienvenue } from './components/Bienvenue'
 import { Informations } from './components/Informations'
@@ -13,6 +13,7 @@ import { Lettres } from './components/Lettres'
 import { Hike } from './components/Hike'
 import { Contact } from './components/Contact'
 import { Dons } from './components/Dons'
+import { Toast } from './components/Toast'
 import { DesktopElementConfig, bulleOffsets, bienvenueBulleOffsets, famillesBulleOffsets, componentWidths } from './types'
 
 // Desktop background dimensions from Ordi_Fond.svg viewBox
@@ -55,6 +56,28 @@ export function DesktopApp() {
   const [mousePos, setMousePos] = useState({ x: 0, y: 0 })
   const [scale, setScale] = useState(1)
   const containerRef = useRef<HTMLDivElement>(null)
+
+  // Toast state for clicks outside bubbles
+  const [missedClicks, setMissedClicks] = useState(0)
+  const [showToast, setShowToast] = useState(false)
+
+  // Handle clicks - show toast after 3 clicks outside bubbles
+  const handleContainerClick = useCallback((e: ReactMouseEvent) => {
+    const target = e.target as HTMLElement
+
+    // Check if click was on a bubble/link (has data-bulle attribute or is inside one)
+    const clickedBubble = target.closest('[data-bulle]') || target.closest('a') || target.closest('button')
+
+    if (!clickedBubble) {
+      const newCount = missedClicks + 1
+      setMissedClicks(newCount)
+
+      if (newCount >= 3) {
+        setShowToast(true)
+        setMissedClicks(0)
+      }
+    }
+  }, [missedClicks])
 
   // Calculate scale based on width only, allow vertical scroll if needed
   useEffect(() => {
@@ -107,9 +130,17 @@ export function DesktopApp() {
         </div>
       )}
 
+      {/* Toast for missed clicks */}
+      <Toast
+        message="Essaye de cliquer sur une bulle !"
+        isVisible={showToast}
+        onClose={() => setShowToast(false)}
+      />
+
       {/* Main Content */}
       <div
         ref={containerRef}
+        onClick={handleContainerClick}
         style={{
           position: 'relative',
           width: scaledWidth,

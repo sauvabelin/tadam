@@ -1,74 +1,16 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useEditor, EditorContent } from '@tiptap/react'
 import StarterKit from '@tiptap/starter-kit'
 import Link from '@tiptap/extension-link'
-import Image from '@tiptap/extension-image'
+import { ImageResizeMarkdown } from '../../extensions/ImageResizeMarkdown'
 import Placeholder from '@tiptap/extension-placeholder'
 import { Markdown, MarkdownStorage } from 'tiptap-markdown'
 import { BulleId } from '../../types'
 import { Modal } from '../../components/Modal'
-
-// Placeholder content for each bubble
-const PLACEHOLDER_CONTENT: Record<BulleId, string> = {
-  informations: `# Informations Générales
-
-Bienvenue au festival Tadam !
-
-## Dates
-- Date de début: À définir
-- Date de fin: À définir
-
-## Lieu
-Sauvabelin, Lausanne`,
-  train: `# Journée des Parents
-
-Informations sur la journée des parents...`,
-  chapiteau: `# Trailer
-
-Contenu du trailer à venir...`,
-  lettres: `# Lettres
-
-Contenu des lettres à venir...`,
-  inspectionDesSacs: `# Inspection des Sacs
-
-Liste des objets autorisés et interdits...`,
-  hike: `# Hike
-
-Informations sur la randonnée...`,
-  concert: `# Concert
-
-Programme du concert...`,
-  bouffe: `# Bouffe
-
-Menu et informations sur la nourriture...`,
-  journal: `# Journal
-
-Actualités du festival...`,
-  contact: `# Contact
-
-Pour nous contacter...`,
-  dons: `# Dons
-
-Informations sur les dons...`,
-  inscription: `# Inscription
-
-Comment s'inscrire...`,
-  bienvenue: `# Bienvenue
-
-Message de bienvenue...`,
-  patatra: `# Patatra
-
-Informations sur Patatra...`,
-  fantasia: `# Fantasia
-
-Informations sur Fantasia...`,
-  lamifa: `# Lamifa
-
-Informations sur Lamifa...`,
-  zampazzi: `# Zampazzi
-
-Informations sur Zampazzi...`,
-}
+import { getBubble, saveBubble } from '../../api/bubbleApi'
+import { LinkModal } from '../../components/editor/LinkModal'
+import { LinkPopover } from '../../components/editor/LinkPopover'
+import { ImageUploadModal } from '../../components/editor/ImageUploadModal'
 
 const BUBBLE_LABELS: Record<BulleId, string> = {
   informations: 'Informations',
@@ -103,6 +45,113 @@ interface ToolbarButtonProps {
   children: React.ReactNode
 }
 
+// SVG Icons
+const Icons = {
+  bold: (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+      <path d="M6 4h8a4 4 0 0 1 4 4 4 4 0 0 1-4 4H6z" />
+      <path d="M6 12h9a4 4 0 0 1 4 4 4 4 0 0 1-4 4H6z" />
+    </svg>
+  ),
+  italic: (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+      <line x1="19" y1="4" x2="10" y2="4" />
+      <line x1="14" y1="20" x2="5" y2="20" />
+      <line x1="15" y1="4" x2="9" y2="20" />
+    </svg>
+  ),
+  strike: (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+      <line x1="4" y1="12" x2="20" y2="12" />
+      <path d="M17.5 7.5A5 5 0 0 0 12 4c-2.76 0-5 1.5-5 4 0 1.5.5 2.5 2 3.5" />
+      <path d="M8.5 15c0 2.5 2.24 5 5 5 2.76 0 5-1.5 5-4 0-1-.5-2-1.5-3" />
+    </svg>
+  ),
+  h1: (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+      <path d="M4 12h8M4 6v12M12 6v12" />
+      <path d="M17 12l3-2v10" />
+    </svg>
+  ),
+  h2: (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+      <path d="M4 12h8M4 6v12M12 6v12" />
+      <path d="M21 18h-4c0-4 4-3 4-6 0-1.5-2-2.5-4-1" />
+    </svg>
+  ),
+  h3: (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+      <path d="M4 12h8M4 6v12M12 6v12" />
+      <path d="M17.5 10.5c1.7-1 3.5 0 3.5 1.5a2 2 0 0 1-2 2c1.5 0 2.5 1 2.5 2.5 0 1.5-1.5 2.5-3.5 1.5" />
+    </svg>
+  ),
+  bulletList: (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+      <line x1="9" y1="6" x2="20" y2="6" />
+      <line x1="9" y1="12" x2="20" y2="12" />
+      <line x1="9" y1="18" x2="20" y2="18" />
+      <circle cx="5" cy="6" r="1" fill="currentColor" />
+      <circle cx="5" cy="12" r="1" fill="currentColor" />
+      <circle cx="5" cy="18" r="1" fill="currentColor" />
+    </svg>
+  ),
+  orderedList: (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+      <line x1="10" y1="6" x2="21" y2="6" />
+      <line x1="10" y1="12" x2="21" y2="12" />
+      <line x1="10" y1="18" x2="21" y2="18" />
+      <text x="3" y="8" fontSize="6" fill="currentColor" stroke="none">1</text>
+      <text x="3" y="14" fontSize="6" fill="currentColor" stroke="none">2</text>
+      <text x="3" y="20" fontSize="6" fill="currentColor" stroke="none">3</text>
+    </svg>
+  ),
+  blockquote: (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+      <path d="M3 21c3 0 7-1 7-8V5c0-1.25-.756-2.017-2-2H4c-1.25 0-2 .75-2 1.972V11c0 1.25.75 2 2 2 1 0 1 0 1 1v1c0 1-1 2-2 2s-1 .008-1 1.031V21" />
+      <path d="M15 21c3 0 7-1 7-8V5c0-1.25-.757-2.017-2-2h-4c-1.25 0-2 .75-2 1.972V11c0 1.25.75 2 2 2h.75c0 2.25.25 4-2.75 4v4" />
+    </svg>
+  ),
+  code: (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+      <polyline points="16 18 22 12 16 6" />
+      <polyline points="8 6 2 12 8 18" />
+    </svg>
+  ),
+  link: (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+      <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" />
+      <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" />
+    </svg>
+  ),
+  image: (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+      <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+      <circle cx="8.5" cy="8.5" r="1.5" />
+      <polyline points="21 15 16 10 5 21" />
+    </svg>
+  ),
+  imageManager: (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+      <rect x="3" y="3" width="7" height="7" rx="1" />
+      <rect x="14" y="3" width="7" height="7" rx="1" />
+      <rect x="3" y="14" width="7" height="7" rx="1" />
+      <rect x="14" y="14" width="7" height="7" rx="1" />
+    </svg>
+  ),
+  undo: (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+      <path d="M3 7v6h6" />
+      <path d="M21 17a9 9 0 0 0-9-9 9 9 0 0 0-6 2.3L3 13" />
+    </svg>
+  ),
+  redo: (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+      <path d="M21 7v6h-6" />
+      <path d="M3 17a9 9 0 0 1 9-9 9 9 0 0 1 6 2.3l3 2.7" />
+    </svg>
+  ),
+}
+
 function ToolbarButton({ onClick, isActive, disabled, title, children }: ToolbarButtonProps) {
   return (
     <button
@@ -110,30 +159,29 @@ function ToolbarButton({ onClick, isActive, disabled, title, children }: Toolbar
       disabled={disabled}
       title={title}
       style={{
-        padding: '0.375rem 0.5rem',
-        background: isActive ? '#e5e7eb' : 'transparent',
-        border: 'none',
-        borderRadius: '0.25rem',
+        padding: '0.375rem',
+        background: isActive ? '#FF6B6B' : '#FFFEF5',
+        border: isActive ? '2px solid #2D2D2D' : '2px solid transparent',
+        borderRadius: '0.375rem',
         cursor: disabled ? 'not-allowed' : 'pointer',
-        opacity: disabled ? 0.5 : 1,
+        opacity: disabled ? 0.4 : 1,
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        minWidth: '2rem',
-        height: '2rem',
-        fontSize: '0.875rem',
-        fontWeight: 600,
-        color: '#374151',
-        transition: 'background 0.15s',
+        width: '2.25rem',
+        height: '2.25rem',
+        color: isActive ? '#2D2D2D' : '#4a4a4a',
+        transition: 'all 0.15s',
+        boxShadow: isActive ? '2px 2px 0px rgba(0, 0, 0, 0.15)' : 'none',
       }}
       onMouseEnter={(e) => {
         if (!disabled && !isActive) {
-          e.currentTarget.style.background = '#f3f4f6'
+          e.currentTarget.style.background = '#ECE5DE'
         }
       }}
       onMouseLeave={(e) => {
         if (!disabled) {
-          e.currentTarget.style.background = isActive ? '#e5e7eb' : 'transparent'
+          e.currentTarget.style.background = isActive ? '#FF6B6B' : '#FFFEF5'
         }
       }}
     >
@@ -146,10 +194,11 @@ function ToolbarDivider() {
   return (
     <div
       style={{
-        width: '1px',
+        width: '2px',
         height: '1.5rem',
-        background: '#d1d5db',
-        margin: '0 0.25rem',
+        background: '#902212',
+        margin: '0 0.5rem',
+        borderRadius: '1px',
       }}
     />
   )
@@ -157,35 +206,131 @@ function ToolbarDivider() {
 
 export function BubbleEditor({ bubbleId, isMobile }: BubbleEditorProps) {
   const [isPreviewOpen, setIsPreviewOpen] = useState(false)
+  const [isLoading, setIsLoading] = useState(true)
+  const [isSaving, setIsSaving] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [saveSuccess, setSaveSuccess] = useState(false)
+
+  // Modal states
+  const [isLinkModalOpen, setIsLinkModalOpen] = useState(false)
+  const [isImageModalOpen, setIsImageModalOpen] = useState(false)
+
+  // Link popover state
+  const [linkPopoverOpen, setLinkPopoverOpen] = useState(false)
+  const [linkPopoverPosition, setLinkPopoverPosition] = useState({ top: 0, left: 0 })
+
+  // Force re-render on editor updates for toolbar state
+  const [, forceUpdate] = useState(0)
 
   const editor = useEditor({
     extensions: [
       StarterKit,
-      Link.configure({ openOnClick: false }),
-      Image,
-      Placeholder.configure({ placeholder: 'Commencez à écrire...' }),
-      Markdown,
+      Link.configure({
+        openOnClick: false,
+        HTMLAttributes: {
+          class: 'editor-link',
+        },
+      }),
+      ImageResizeMarkdown,
+      Placeholder.configure({ placeholder: 'Commencez a ecrire...' }),
+      Markdown.configure({
+        html: true,
+        transformPastedText: true,
+      }),
     ],
-    content: PLACEHOLDER_CONTENT[bubbleId] || '',
+    content: '',
     editorProps: {
       attributes: {
-        style: 'min-height: 100%; padding: 1rem; outline: none;',
+        style: 'min-height: 100%; padding: 1.25rem; outline: none;',
       },
+      handleClick: (view, pos, event) => {
+        // Check if clicked on a link
+        const { state } = view
+        const { doc } = state
+        const node = doc.resolve(pos)
+        const marks = node.marks()
+        const linkMark = marks.find((m) => m.type.name === 'link')
+
+        if (linkMark) {
+          const target = event.target as HTMLElement
+          const rect = target.getBoundingClientRect()
+          setLinkPopoverPosition({
+            top: rect.bottom + 8,
+            left: rect.left,
+          })
+          setLinkPopoverOpen(true)
+          return true
+        }
+
+        setLinkPopoverOpen(false)
+        return false
+      },
+    },
+    onSelectionUpdate: () => {
+      // Close popover when selection changes away from link
+      if (editor && !editor.isActive('link')) {
+        setLinkPopoverOpen(false)
+      }
+    },
+    onUpdate: () => {
+      // Force re-render to update toolbar button states (undo/redo)
+      forceUpdate((n) => n + 1)
     },
   })
 
-  useEffect(() => {
-    if (editor) {
-      editor.commands.setContent(PLACEHOLDER_CONTENT[bubbleId] || '')
+  // Load content from API
+  const loadContent = useCallback(async () => {
+    setIsLoading(true)
+    setError(null)
+
+    try {
+      const bubble = await getBubble(bubbleId)
+
+      if (editor) {
+        editor.commands.setContent(bubble?.content || '')
+      }
+    } catch (err) {
+      console.error('Failed to load bubble:', err)
+      setError('Erreur lors du chargement')
+      if (editor) {
+        editor.commands.setContent('')
+      }
+    } finally {
+      setIsLoading(false)
     }
   }, [bubbleId, editor])
 
-  const handleSave = () => {
-    if (!editor) return
-    const storage = editor.storage as unknown as { markdown: MarkdownStorage }
-    const markdown = storage.markdown.getMarkdown()
-    console.log(`Saving content for ${bubbleId}:`, markdown)
-    alert('Contenu sauvegardé (console.log)')
+  useEffect(() => {
+    if (editor) {
+      loadContent()
+    }
+  }, [bubbleId, editor, loadContent])
+
+  const handleSave = async () => {
+    if (!editor || isSaving) return
+
+    setIsSaving(true)
+    setError(null)
+    setSaveSuccess(false)
+
+    try {
+      const storage = editor.storage as unknown as { markdown: MarkdownStorage }
+      const markdown = storage.markdown.getMarkdown()
+
+      const result = await saveBubble(bubbleId, markdown)
+
+      if (result.success) {
+        setSaveSuccess(true)
+        setTimeout(() => setSaveSuccess(false), 2000)
+      } else {
+        setError(result.error || 'Erreur lors de la sauvegarde')
+      }
+    } catch (err) {
+      console.error('Save error:', err)
+      setError('Erreur lors de la sauvegarde')
+    } finally {
+      setIsSaving(false)
+    }
   }
 
   const handlePreview = () => {
@@ -194,18 +339,35 @@ export function BubbleEditor({ bubbleId, isMobile }: BubbleEditorProps) {
 
   const addLink = () => {
     if (!editor) return
-    const url = window.prompt('URL du lien:')
-    if (url) {
-      editor.chain().focus().setLink({ href: url }).run()
+
+    // If text is selected and already has link, open popover instead
+    if (editor.isActive('link')) {
+      const { view } = editor
+      const { state } = view
+      const { from } = state.selection
+      const coords = view.coordsAtPos(from)
+      setLinkPopoverPosition({
+        top: coords.bottom + 8,
+        left: coords.left,
+      })
+      setLinkPopoverOpen(true)
+    } else {
+      setIsLinkModalOpen(true)
     }
   }
 
-  const addImage = () => {
+  const handleLinkSubmit = (url: string) => {
     if (!editor) return
-    const url = window.prompt("URL de l'image:")
-    if (url) {
-      editor.chain().focus().setImage({ src: url }).run()
-    }
+    editor.chain().focus().setLink({ href: url }).run()
+  }
+
+  const addImage = () => {
+    setIsImageModalOpen(true)
+  }
+
+  const handleImageInsert = (url: string, alt?: string) => {
+    if (!editor) return
+    editor.chain().focus().setImage({ src: url, alt: alt || '' }).run()
   }
 
   if (!editor) {
@@ -230,62 +392,125 @@ export function BubbleEditor({ bubbleId, isMobile }: BubbleEditorProps) {
           marginBottom: '1rem',
           flexWrap: 'wrap',
           gap: '0.75rem',
+          padding: '1rem 1.25rem',
+          background: '#FFFEF5',
+          border: '3px solid #2D2D2D',
+          borderRadius: '1rem',
+          boxShadow: '4px 4px 0px rgba(0, 0, 0, 0.15)',
         }}
       >
         <h1
           style={{
-            fontSize: isMobile ? '1.25rem' : '1.5rem',
-            fontWeight: 700,
-            color: '#1a1a2e',
+            fontSize: isMobile ? '1.25rem' : '1.75rem',
+            fontWeight: 800,
+            color: '#2D2D2D',
             margin: 0,
           }}
         >
           {BUBBLE_LABELS[bubbleId]}
         </h1>
-        <div style={{ display: 'flex', gap: '0.5rem' }}>
+        <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
+          {/* Status indicators */}
+          {isLoading && (
+            <span
+              style={{
+                color: '#6b7280',
+                fontSize: '0.875rem',
+                fontWeight: 500,
+                padding: '0.375rem 0.75rem',
+                background: '#ECE5DE',
+                borderRadius: '0.5rem',
+              }}
+            >
+              Chargement...
+            </span>
+          )}
+          {error && (
+            <span
+              style={{
+                color: '#2D2D2D',
+                fontSize: '0.875rem',
+                fontWeight: 600,
+                padding: '0.375rem 0.75rem',
+                background: '#FF6B6B',
+                borderRadius: '0.5rem',
+                border: '2px solid #2D2D2D',
+              }}
+            >
+              {error}
+            </span>
+          )}
+          {saveSuccess && (
+            <span
+              style={{
+                color: '#2D2D2D',
+                fontSize: '0.875rem',
+                fontWeight: 600,
+                padding: '0.375rem 0.75rem',
+                background: '#90EE90',
+                borderRadius: '0.5rem',
+                border: '2px solid #2D2D2D',
+              }}
+            >
+              Sauvegarde
+            </span>
+          )}
+
           <button
             onClick={handlePreview}
             style={{
               padding: isMobile ? '0.5rem 1rem' : '0.625rem 1.25rem',
               fontSize: isMobile ? '0.875rem' : '0.95rem',
-              fontWeight: 500,
-              color: '#ffffff',
-              background: '#4b5563',
-              border: 'none',
+              fontWeight: 600,
+              color: '#2D2D2D',
+              background: '#ECE5DE',
+              border: '3px solid #2D2D2D',
               borderRadius: '0.5rem',
               cursor: 'pointer',
               transition: 'all 0.2s',
+              boxShadow: '3px 3px 0px rgba(0, 0, 0, 0.15)',
             }}
             onMouseEnter={(e) => {
-              e.currentTarget.style.background = '#374151'
+              e.currentTarget.style.transform = 'translateY(-2px)'
+              e.currentTarget.style.boxShadow = '4px 4px 0px rgba(0, 0, 0, 0.15)'
             }}
             onMouseLeave={(e) => {
-              e.currentTarget.style.background = '#4b5563'
+              e.currentTarget.style.transform = 'translateY(0)'
+              e.currentTarget.style.boxShadow = '3px 3px 0px rgba(0, 0, 0, 0.15)'
             }}
           >
-            Prévisualiser
+            Previsualiser
           </button>
           <button
             onClick={handleSave}
+            disabled={isSaving || isLoading}
             style={{
               padding: isMobile ? '0.5rem 1rem' : '0.625rem 1.25rem',
               fontSize: isMobile ? '0.875rem' : '0.95rem',
-              fontWeight: 500,
-              color: '#ffffff',
-              background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
-              border: 'none',
+              fontWeight: 600,
+              color: '#FFFEF5',
+              background: isSaving ? '#9ca3af' : '#902212',
+              border: '3px solid #2D2D2D',
               borderRadius: '0.5rem',
-              cursor: 'pointer',
+              cursor: isSaving || isLoading ? 'not-allowed' : 'pointer',
               transition: 'all 0.2s',
+              opacity: isSaving || isLoading ? 0.7 : 1,
+              boxShadow: '3px 3px 0px rgba(0, 0, 0, 0.15)',
             }}
             onMouseEnter={(e) => {
-              e.currentTarget.style.opacity = '0.9'
+              if (!isSaving && !isLoading) {
+                e.currentTarget.style.transform = 'translateY(-2px)'
+                e.currentTarget.style.boxShadow = '4px 4px 0px rgba(0, 0, 0, 0.15)'
+              }
             }}
             onMouseLeave={(e) => {
-              e.currentTarget.style.opacity = '1'
+              if (!isSaving && !isLoading) {
+                e.currentTarget.style.transform = 'translateY(0)'
+                e.currentTarget.style.boxShadow = '3px 3px 0px rgba(0, 0, 0, 0.15)'
+              }
             }}
           >
-            Sauvegarder
+            {isSaving ? 'Sauvegarde...' : 'Sauvegarder'}
           </button>
         </div>
       </div>
@@ -295,12 +520,15 @@ export function BubbleEditor({ bubbleId, isMobile }: BubbleEditorProps) {
         style={{
           flex: 1,
           minHeight: 0,
-          borderRadius: '0.5rem',
+          borderRadius: '1rem',
           overflow: 'hidden',
-          border: '1px solid #e5e7eb',
+          border: '3px solid #2D2D2D',
           display: 'flex',
           flexDirection: 'column',
           background: '#FFFEF5',
+          opacity: isLoading ? 0.6 : 1,
+          transition: 'opacity 0.2s',
+          boxShadow: '4px 4px 0px rgba(0, 0, 0, 0.15)',
         }}
       >
         {/* Toolbar */}
@@ -308,10 +536,10 @@ export function BubbleEditor({ bubbleId, isMobile }: BubbleEditorProps) {
           style={{
             display: 'flex',
             alignItems: 'center',
-            gap: '0.125rem',
-            padding: '0.5rem',
-            background: '#f9fafb',
-            borderBottom: '1px solid #e5e7eb',
+            gap: '0.25rem',
+            padding: '0.625rem 0.75rem',
+            background: '#ECE5DE',
+            borderBottom: '3px solid #2D2D2D',
             flexWrap: 'wrap',
           }}
         >
@@ -321,21 +549,21 @@ export function BubbleEditor({ bubbleId, isMobile }: BubbleEditorProps) {
             isActive={editor.isActive('bold')}
             title="Gras (Ctrl+B)"
           >
-            <strong>B</strong>
+            {Icons.bold}
           </ToolbarButton>
           <ToolbarButton
             onClick={() => editor.chain().focus().toggleItalic().run()}
             isActive={editor.isActive('italic')}
             title="Italique (Ctrl+I)"
           >
-            <em>I</em>
+            {Icons.italic}
           </ToolbarButton>
           <ToolbarButton
             onClick={() => editor.chain().focus().toggleStrike().run()}
             isActive={editor.isActive('strike')}
-            title="Barré"
+            title="Barre"
           >
-            <s>S</s>
+            {Icons.strike}
           </ToolbarButton>
 
           <ToolbarDivider />
@@ -346,21 +574,21 @@ export function BubbleEditor({ bubbleId, isMobile }: BubbleEditorProps) {
             isActive={editor.isActive('heading', { level: 1 })}
             title="Titre 1"
           >
-            H1
+            {Icons.h1}
           </ToolbarButton>
           <ToolbarButton
             onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()}
             isActive={editor.isActive('heading', { level: 2 })}
             title="Titre 2"
           >
-            H2
+            {Icons.h2}
           </ToolbarButton>
           <ToolbarButton
             onClick={() => editor.chain().focus().toggleHeading({ level: 3 }).run()}
             isActive={editor.isActive('heading', { level: 3 })}
             title="Titre 3"
           >
-            H3
+            {Icons.h3}
           </ToolbarButton>
 
           <ToolbarDivider />
@@ -369,16 +597,16 @@ export function BubbleEditor({ bubbleId, isMobile }: BubbleEditorProps) {
           <ToolbarButton
             onClick={() => editor.chain().focus().toggleBulletList().run()}
             isActive={editor.isActive('bulletList')}
-            title="Liste à puces"
+            title="Liste a puces"
           >
-            •
+            {Icons.bulletList}
           </ToolbarButton>
           <ToolbarButton
             onClick={() => editor.chain().focus().toggleOrderedList().run()}
             isActive={editor.isActive('orderedList')}
-            title="Liste numérotée"
+            title="Liste numerotee"
           >
-            1.
+            {Icons.orderedList}
           </ToolbarButton>
 
           <ToolbarDivider />
@@ -389,14 +617,14 @@ export function BubbleEditor({ bubbleId, isMobile }: BubbleEditorProps) {
             isActive={editor.isActive('blockquote')}
             title="Citation"
           >
-            "
+            {Icons.blockquote}
           </ToolbarButton>
           <ToolbarButton
             onClick={() => editor.chain().focus().toggleCodeBlock().run()}
             isActive={editor.isActive('codeBlock')}
             title="Bloc de code"
           >
-            {'</>'}
+            {Icons.code}
           </ToolbarButton>
 
           <ToolbarDivider />
@@ -405,15 +633,12 @@ export function BubbleEditor({ bubbleId, isMobile }: BubbleEditorProps) {
           <ToolbarButton
             onClick={addLink}
             isActive={editor.isActive('link')}
-            title="Lien"
+            title="Lien (Ctrl+K)"
           >
-            🔗
+            {Icons.link}
           </ToolbarButton>
-          <ToolbarButton
-            onClick={addImage}
-            title="Image"
-          >
-            🖼
+          <ToolbarButton onClick={addImage} title="Image">
+            {Icons.image}
           </ToolbarButton>
 
           <ToolbarDivider />
@@ -424,14 +649,14 @@ export function BubbleEditor({ bubbleId, isMobile }: BubbleEditorProps) {
             disabled={!editor.can().undo()}
             title="Annuler (Ctrl+Z)"
           >
-            ↶
+            {Icons.undo}
           </ToolbarButton>
           <ToolbarButton
             onClick={() => editor.chain().focus().redo().run()}
             disabled={!editor.can().redo()}
-            title="Rétablir (Ctrl+Y)"
+            title="Retablir (Ctrl+Y)"
           >
-            ↷
+            {Icons.redo}
           </ToolbarButton>
         </div>
 
@@ -452,6 +677,7 @@ export function BubbleEditor({ bubbleId, isMobile }: BubbleEditorProps) {
         </div>
       </div>
 
+      {/* Preview Modal */}
       <Modal
         isOpen={isPreviewOpen}
         onClose={() => setIsPreviewOpen(false)}
@@ -466,77 +692,116 @@ export function BubbleEditor({ bubbleId, isMobile }: BubbleEditorProps) {
         />
       </Modal>
 
+      {/* Link Modal */}
+      <LinkModal
+        isOpen={isLinkModalOpen}
+        onClose={() => setIsLinkModalOpen(false)}
+        onSubmit={handleLinkSubmit}
+      />
+
+      {/* Link Popover */}
+      <LinkPopover
+        editor={editor}
+        isOpen={linkPopoverOpen}
+        onClose={() => setLinkPopoverOpen(false)}
+        position={linkPopoverPosition}
+      />
+
+      {/* Image Upload Modal */}
+      <ImageUploadModal
+        isOpen={isImageModalOpen}
+        onClose={() => setIsImageModalOpen(false)}
+        onInsert={handleImageInsert}
+        bubbleId={bubbleId}
+      />
+
       {/* TipTap editor styles */}
       <style>{`
         .tiptap {
           height: 100%;
+          font-size: 1rem;
+          line-height: 1.75;
         }
         .tiptap:focus {
           outline: none;
         }
         .tiptap p {
-          margin: 0.5em 0;
+          margin: 0.75em 0;
         }
         .tiptap h1 {
           font-size: 2em;
           font-weight: 700;
-          margin: 0.67em 0;
+          margin: 1em 0 0.5em;
+          line-height: 1.2;
         }
         .tiptap h2 {
           font-size: 1.5em;
           font-weight: 600;
-          margin: 0.75em 0;
+          margin: 1em 0 0.5em;
+          line-height: 1.3;
         }
         .tiptap h3 {
           font-size: 1.25em;
           font-weight: 600;
-          margin: 0.83em 0;
+          margin: 1em 0 0.5em;
+          line-height: 1.4;
         }
         .tiptap ul {
           list-style-type: disc;
           padding-left: 1.5em;
-          margin: 0.5em 0;
+          margin: 0.75em 0;
         }
         .tiptap ol {
           list-style-type: decimal;
           padding-left: 1.5em;
-          margin: 0.5em 0;
+          margin: 0.75em 0;
         }
         .tiptap li {
-          margin: 0.25em 0;
+          margin: 0.375em 0;
         }
         .tiptap blockquote {
-          border-left: 3px solid #d1d5db;
-          padding-left: 1em;
-          margin: 0.5em 0;
-          color: #6b7280;
+          border-left: 4px solid #10b981;
+          padding-left: 1.25em;
+          margin: 1em 0;
+          color: #4b5563;
+          font-style: italic;
         }
         .tiptap pre {
           background: #1f2937;
           color: #f9fafb;
-          padding: 0.75em 1em;
-          border-radius: 0.375rem;
+          padding: 1em 1.25em;
+          border-radius: 0.5rem;
           overflow-x: auto;
-          margin: 0.5em 0;
+          margin: 1em 0;
+          font-size: 0.9em;
         }
         .tiptap code {
           background: #e5e7eb;
-          padding: 0.125em 0.25em;
+          padding: 0.125em 0.375em;
           border-radius: 0.25rem;
-          font-size: 0.875em;
+          font-size: 0.9em;
         }
         .tiptap pre code {
           background: none;
           padding: 0;
           color: inherit;
         }
-        .tiptap a {
+        .tiptap a,
+        .tiptap .editor-link {
           color: #2563eb;
           text-decoration: underline;
+          cursor: pointer;
+          transition: color 0.15s;
+        }
+        .tiptap a:hover,
+        .tiptap .editor-link:hover {
+          color: #1d4ed8;
         }
         .tiptap img {
           max-width: 100%;
           height: auto;
+          border-radius: 0.5rem;
+          box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
         }
         .tiptap p.is-editor-empty:first-child::before {
           content: attr(data-placeholder);
@@ -544,6 +809,7 @@ export function BubbleEditor({ bubbleId, isMobile }: BubbleEditorProps) {
           color: #9ca3af;
           pointer-events: none;
           height: 0;
+          font-style: italic;
         }
         .tiptap-preview h1 {
           font-size: 2em;
@@ -571,16 +837,17 @@ export function BubbleEditor({ bubbleId, isMobile }: BubbleEditorProps) {
           margin: 0.5em 0;
         }
         .tiptap-preview blockquote {
-          border-left: 3px solid #d1d5db;
-          padding-left: 1em;
-          margin: 0.5em 0;
-          color: #6b7280;
+          border-left: 4px solid #10b981;
+          padding-left: 1.25em;
+          margin: 1em 0;
+          color: #4b5563;
+          font-style: italic;
         }
         .tiptap-preview pre {
           background: #1f2937;
           color: #f9fafb;
-          padding: 0.75em 1em;
-          border-radius: 0.375rem;
+          padding: 1em 1.25em;
+          border-radius: 0.5rem;
           overflow-x: auto;
         }
         .tiptap-preview a {
@@ -590,6 +857,7 @@ export function BubbleEditor({ bubbleId, isMobile }: BubbleEditorProps) {
         .tiptap-preview img {
           max-width: 100%;
           height: auto;
+          border-radius: 0.5rem;
         }
       `}</style>
     </div>

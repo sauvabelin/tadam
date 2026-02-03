@@ -19,18 +19,17 @@ jobs:
           node-version: '20'
           cache: 'npm'
 
-      - name: Install dependencies
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          tools: composer
+
+      - name: Install Node dependencies
         run: npm ci
 
       - name: Build project
         run: npm run build
-
-      - name: Prepare deployment
-        run: |
-          mkdir deploy
-          cp -r dist deploy/
-          cp index.php deploy/
-          cp .htaccess deploy/
 
       - name: Deploy via FTP
         uses: SamKirkland/FTP-Deploy-Action@v4.3.5
@@ -40,5 +39,10 @@ jobs:
           password: ${{ secrets.FTP_PASSWORD }}
           port: 21
           protocol: ftps
-          local-dir: ./deploy/
+          local-dir: ./dist/
           server-dir: ${{ secrets.FTP_REMOTE_PATH }}
+          exclude: |
+            **/.git*
+            **/.env
+            **/Dockerfile
+            **/.dockerignore

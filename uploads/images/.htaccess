@@ -1,0 +1,14 @@
+# Prevent PHP execution in uploads directory
+php_flag engine off
+
+# Deny access to .htaccess
+<Files .htaccess>
+    Order allow,deny
+    Deny from all
+</Files>
+
+# Only allow specific image types
+<FilesMatch "\.(?!(jpg|jpeg|png|gif|webp)$)[^.]+$">
+    Order allow,deny
+    Deny from all
+</FilesMatch>
