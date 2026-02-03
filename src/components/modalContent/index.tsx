@@ -1,36 +1,26 @@
 import { ReactNode } from 'react'
 import { BulleId } from '../../types'
+import { BubbleContent } from '../BubbleContent'
 
-// Temporary "under construction" iframe component
-const ConstructionIframe = () => (
-  <iframe
-    src="/construction.html"
-    style={{
-      width: '100%',
-      height: 'calc(100vh - 100px)',
-      border: 'none',
-      borderRadius: '16px',
-    }}
-    title="En construction"
-  />
-)
+// Create a component factory for each bubble
+const createBubbleContent = (id: BulleId) => () => <BubbleContent bubbleId={id} />
 
 export const modalContentRegistry: Record<BulleId, () => ReactNode> = {
-  informations: ConstructionIframe,
-  train: ConstructionIframe,
-  chapiteau: ConstructionIframe,
-  lettres: ConstructionIframe,
-  inspectionDesSacs: ConstructionIframe,
-  hike: ConstructionIframe,
-  concert: ConstructionIframe,
-  bouffe: ConstructionIframe,
-  journal: ConstructionIframe,
-  contact: ConstructionIframe,
-  dons: ConstructionIframe,
-  inscription: ConstructionIframe,
-  bienvenue: ConstructionIframe,
-  patatra: ConstructionIframe,
-  fantasia: ConstructionIframe,
-  lamifa: ConstructionIframe,
-  zampazzi: ConstructionIframe,
+  informations: createBubbleContent('informations'),
+  train: createBubbleContent('train'),
+  chapiteau: createBubbleContent('chapiteau'),
+  lettres: createBubbleContent('lettres'),
+  inspectionDesSacs: createBubbleContent('inspectionDesSacs'),
+  hike: createBubbleContent('hike'),
+  concert: createBubbleContent('concert'),
+  bouffe: createBubbleContent('bouffe'),
+  journal: createBubbleContent('journal'),
+  contact: createBubbleContent('contact'),
+  dons: createBubbleContent('dons'),
+  inscription: createBubbleContent('inscription'),
+  bienvenue: createBubbleContent('bienvenue'),
+  patatra: createBubbleContent('patatra'),
+  fantasia: createBubbleContent('fantasia'),
+  lamifa: createBubbleContent('lamifa'),
+  zampazzi: createBubbleContent('zampazzi'),
 }

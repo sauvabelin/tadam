@@ -1,24 +1,5 @@
-import { BulleId } from '../../types'
-
-const BUBBLE_IDS: BulleId[] = [
-  'informations',
-  'train',
-  'chapiteau',
-  'lettres',
-  'inspectionDesSacs',
-  'hike',
-  'concert',
-  'bouffe',
-  'journal',
-  'contact',
-  'dons',
-  'inscription',
-  'bienvenue',
-  'patatra',
-  'fantasia',
-  'lamifa',
-  'zampazzi',
-]
+import { useState } from 'react'
+import { BulleId, BUBBLE_CATEGORIES, BubbleCategory } from '../../types'
 
 const BUBBLE_LABELS: Record<BulleId, string> = {
   informations: 'Informations',
@@ -57,6 +38,11 @@ export function AdminSidebar({
   onMobileClose,
   isMobile,
 }: AdminSidebarProps) {
+  // Start with all categories expanded
+  const [expandedCategories, setExpandedCategories] = useState<Set<BubbleCategory>>(
+    new Set(BUBBLE_CATEGORIES.map(c => c.id))
+  )
+
   const handleSelect = (id: BulleId) => {
     onSelectBubble(id)
     if (isMobile) {
@@ -64,90 +50,191 @@ export function AdminSidebar({
     }
   }
 
+  const toggleCategory = (categoryId: BubbleCategory) => {
+    setExpandedCategories(prev => {
+      const next = new Set(prev)
+      if (next.has(categoryId)) {
+        next.delete(categoryId)
+      } else {
+        next.add(categoryId)
+      }
+      return next
+    })
+  }
+
   const sidebarContent = (
     <>
+      {/* Header */}
       <div
         style={{
-          padding: '1.5rem',
-          borderBottom: '1px solid rgba(255, 255, 255, 0.1)',
+          padding: '1.25rem 1.5rem',
+          borderBottom: '3px solid #2D2D2D',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
+          background: '#902212',
         }}
       >
-        <h2 style={{ fontSize: '1.25rem', fontWeight: 700, margin: 0 }}>
+        <h2
+          style={{
+            fontSize: '1.5rem',
+            fontWeight: 800,
+            margin: 0,
+            color: '#FFFEF5',
+            textShadow: '2px 2px 0px rgba(0,0,0,0.2)',
+          }}
+        >
           Bulles
         </h2>
         {isMobile && (
           <button
             onClick={onMobileClose}
             style={{
-              background: 'none',
-              border: 'none',
-              color: '#ffffff',
-              fontSize: '1.5rem',
+              width: '32px',
+              height: '32px',
+              background: '#FF6B6B',
+              border: '2px solid #2D2D2D',
+              borderRadius: '50%',
               cursor: 'pointer',
-              padding: '0.25rem',
-              lineHeight: 1,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              fontSize: '18px',
+              fontWeight: 'bold',
+              color: '#2D2D2D',
             }}
           >
-            ×
+            x
           </button>
         )}
       </div>
 
+      {/* Navigation */}
       <nav
         style={{
           flex: 1,
           overflowY: 'auto',
-          padding: '0.5rem',
+          padding: '0.75rem',
+          background: '#FFFEF5',
         }}
       >
         <ul style={{ listStyle: 'none', margin: 0, padding: 0 }}>
-          {BUBBLE_IDS.map((id) => (
-            <li key={id} style={{ marginBottom: '0.25rem' }}>
-              <button
-                onClick={() => handleSelect(id)}
-                style={{
-                  width: '100%',
-                  textAlign: 'left',
-                  padding: '0.75rem 1rem',
-                  borderRadius: '0.5rem',
-                  border: 'none',
-                  cursor: 'pointer',
-                  transition: 'all 0.2s',
-                  fontSize: '0.95rem',
-                  background:
-                    selectedBubble === id
-                      ? 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)'
-                      : 'transparent',
-                  color: selectedBubble === id ? '#ffffff' : 'rgba(255, 255, 255, 0.7)',
-                  fontWeight: selectedBubble === id ? 600 : 400,
-                }}
-                onMouseEnter={(e) => {
-                  if (selectedBubble !== id) {
-                    e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)'
-                    e.currentTarget.style.color = '#ffffff'
-                  }
-                }}
-                onMouseLeave={(e) => {
-                  if (selectedBubble !== id) {
-                    e.currentTarget.style.background = 'transparent'
-                    e.currentTarget.style.color = 'rgba(255, 255, 255, 0.7)'
-                  }
-                }}
-              >
-                {BUBBLE_LABELS[id]}
-              </button>
-            </li>
-          ))}
+          {BUBBLE_CATEGORIES.map((category) => {
+            const isExpanded = expandedCategories.has(category.id)
+            const hasSelectedBubble = category.bubbles.includes(selectedBubble)
+
+            return (
+              <li key={category.id} style={{ marginBottom: '0.5rem' }}>
+                {/* Category header */}
+                <button
+                  onClick={() => toggleCategory(category.id)}
+                  style={{
+                    width: '100%',
+                    textAlign: 'left',
+                    padding: '0.75rem 1rem',
+                    borderRadius: '0.5rem',
+                    border: '2px solid #2D2D2D',
+                    cursor: 'pointer',
+                    transition: 'all 0.2s',
+                    fontSize: '1rem',
+                    background: hasSelectedBubble
+                      ? '#902212'
+                      : '#ECE5DE',
+                    color: hasSelectedBubble ? '#FFFEF5' : '#2D2D2D',
+                    fontWeight: 700,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    boxShadow: '3px 3px 0px rgba(0, 0, 0, 0.15)',
+                  }}
+                  onMouseEnter={(e) => {
+                    if (!hasSelectedBubble) {
+                      e.currentTarget.style.background = '#d4ccc4'
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    if (!hasSelectedBubble) {
+                      e.currentTarget.style.background = '#ECE5DE'
+                    }
+                  }}
+                >
+                  <span>{category.label}</span>
+                  <span
+                    style={{
+                      fontSize: '0.875rem',
+                      transition: 'transform 0.2s',
+                      transform: isExpanded ? 'rotate(90deg)' : 'rotate(0deg)',
+                    }}
+                  >
+                    {'>'}
+                  </span>
+                </button>
+
+                {/* Nested bubble items */}
+                {isExpanded && (
+                  <ul
+                    style={{
+                      listStyle: 'none',
+                      margin: '0.5rem 0 0 0',
+                      padding: '0 0 0 0.75rem',
+                      borderLeft: '3px solid #902212',
+                    }}
+                  >
+                    {category.bubbles.map((bubbleId) => (
+                      <li key={bubbleId} style={{ marginBottom: '0.25rem' }}>
+                        <button
+                          onClick={() => handleSelect(bubbleId)}
+                          style={{
+                            width: '100%',
+                            textAlign: 'left',
+                            padding: '0.625rem 1rem',
+                            borderRadius: '0.5rem',
+                            border: selectedBubble === bubbleId
+                              ? '2px solid #2D2D2D'
+                              : '2px solid transparent',
+                            cursor: 'pointer',
+                            transition: 'all 0.2s',
+                            fontSize: '0.9rem',
+                            background: selectedBubble === bubbleId
+                              ? '#FF6B6B'
+                              : 'transparent',
+                            color: selectedBubble === bubbleId ? '#2D2D2D' : '#4a4a4a',
+                            fontWeight: selectedBubble === bubbleId ? 600 : 500,
+                            boxShadow: selectedBubble === bubbleId
+                              ? '2px 2px 0px rgba(0, 0, 0, 0.15)'
+                              : 'none',
+                          }}
+                          onMouseEnter={(e) => {
+                            if (selectedBubble !== bubbleId) {
+                              e.currentTarget.style.background = '#f5f0eb'
+                              e.currentTarget.style.color = '#2D2D2D'
+                            }
+                          }}
+                          onMouseLeave={(e) => {
+                            if (selectedBubble !== bubbleId) {
+                              e.currentTarget.style.background = 'transparent'
+                              e.currentTarget.style.color = '#4a4a4a'
+                            }
+                          }}
+                        >
+                          {BUBBLE_LABELS[bubbleId]}
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </li>
+            )
+          })}
         </ul>
       </nav>
 
+      {/* Footer */}
       <div
         style={{
           padding: '1rem',
-          borderTop: '1px solid rgba(255, 255, 255, 0.1)',
+          borderTop: '3px solid #2D2D2D',
+          background: '#ECE5DE',
         }}
       >
         <button
@@ -155,25 +242,26 @@ export function AdminSidebar({
           style={{
             width: '100%',
             padding: '0.75rem 1rem',
-            background: 'rgba(239, 68, 68, 0.2)',
-            border: '1px solid rgba(239, 68, 68, 0.5)',
+            background: '#FF6B6B',
+            border: '3px solid #2D2D2D',
             borderRadius: '0.5rem',
-            color: '#fca5a5',
-            fontSize: '0.95rem',
-            fontWeight: 500,
+            color: '#2D2D2D',
+            fontSize: '1rem',
+            fontWeight: 600,
             cursor: 'pointer',
             transition: 'all 0.2s',
+            boxShadow: '3px 3px 0px rgba(0, 0, 0, 0.2)',
           }}
           onMouseEnter={(e) => {
-            e.currentTarget.style.background = 'rgba(239, 68, 68, 0.3)'
-            e.currentTarget.style.borderColor = '#ef4444'
+            e.currentTarget.style.transform = 'translateY(-2px)'
+            e.currentTarget.style.boxShadow = '4px 4px 0px rgba(0, 0, 0, 0.2)'
           }}
           onMouseLeave={(e) => {
-            e.currentTarget.style.background = 'rgba(239, 68, 68, 0.2)'
-            e.currentTarget.style.borderColor = 'rgba(239, 68, 68, 0.5)'
+            e.currentTarget.style.transform = 'translateY(0)'
+            e.currentTarget.style.boxShadow = '3px 3px 0px rgba(0, 0, 0, 0.2)'
           }}
         >
-          Déconnexion
+          Deconnexion
         </button>
       </div>
     </>
@@ -187,10 +275,11 @@ export function AdminSidebar({
           width: '280px',
           minWidth: '280px',
           height: '100dvh',
-          background: 'linear-gradient(180deg, #1a1a2e 0%, #16213e 100%)',
-          color: '#ffffff',
+          background: '#FFFEF5',
           display: 'flex',
           flexDirection: 'column',
+          borderRight: '4px solid #2D2D2D',
+          boxShadow: '4px 0 0 rgba(0, 0, 0, 0.1)',
         }}
       >
         {sidebarContent}
@@ -222,14 +311,14 @@ export function AdminSidebar({
           left: 0,
           height: '100dvh',
           width: '280px',
-          background: 'linear-gradient(180deg, #1a1a2e 0%, #16213e 100%)',
-          color: '#ffffff',
+          background: '#FFFEF5',
           display: 'flex',
           flexDirection: 'column',
           zIndex: 50,
           transform: isMobileOpen ? 'translateX(0)' : 'translateX(-100%)',
           transition: 'transform 0.3s ease',
-          boxShadow: isMobileOpen ? '4px 0 20px rgba(0, 0, 0, 0.3)' : 'none',
+          borderRight: '4px solid #2D2D2D',
+          boxShadow: isMobileOpen ? '8px 0 20px rgba(0, 0, 0, 0.3)' : 'none',
         }}
       >
         {sidebarContent}
