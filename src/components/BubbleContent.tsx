@@ -14,6 +14,7 @@ export function BubbleContent({ bubbleId }: Props) {
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
+  // here use a hook instead, useEffect is not recomended for fetching data
   useEffect(() => {
     let cancelled = false
 

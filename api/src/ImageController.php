@@ -7,7 +7,7 @@ use DB;
 class ImageController
 {
     private const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
-    private const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+    private const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'image/svg+xml'];
     private const UPLOAD_DIR = __DIR__ . '/../../uploads/images/';
 
     /**
@@ -34,7 +34,7 @@ class ImageController
         $mimeType = $finfo->file($file['tmp_name']);
 
         if (!in_array($mimeType, self::ALLOWED_TYPES, true)) {
-            throw new \InvalidArgumentException('Invalid file type. Allowed: JPG, PNG, GIF, WebP.');
+            throw new \InvalidArgumentException('Invalid file type. Allowed: JPG, PNG, GIF, WebP, SVG.');
         }
 
         // Generate unique filename
@@ -190,6 +190,7 @@ class ImageController
             'image/png' => 'png',
             'image/gif' => 'gif',
             'image/webp' => 'webp',
+            'image/svg+xml' => 'svg',
         ];
 
         return $map[$mimeType] ?? 'bin';

@@ -85,9 +85,9 @@ export function ImageUploadModal({
       setError(null)
 
       // Validate file type
-      const validTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp']
+      const validTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'image/svg+xml']
       if (!validTypes.includes(file.type)) {
-        setError('Format non valide. Utilisez JPG, PNG, GIF ou WebP.')
+        setError('Format non valide. Utilisez JPG, PNG, GIF, WebP ou SVG.')
         return
       }
 
@@ -417,7 +417,7 @@ export function ImageUploadModal({
               <input
                 ref={fileInputRef}
                 type="file"
-                accept="image/jpeg,image/png,image/gif,image/webp"
+                accept="image/jpeg,image/png,image/gif,image/webp,image/svg+xml"
                 onChange={(e) => {
                   const file = e.target.files?.[0]
                   if (file) handleFileSelect(file)
