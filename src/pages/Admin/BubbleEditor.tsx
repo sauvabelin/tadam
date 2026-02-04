@@ -803,6 +803,10 @@ export function BubbleEditor({ bubbleId, isMobile }: BubbleEditorProps) {
           border-radius: 0.5rem;
           box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
         }
+        .tiptap img[src$=".svg"] {
+          min-width: 100px;
+          min-height: 100px;
+        }
         .tiptap p.is-editor-empty:first-child::before {
           content: attr(data-placeholder);
           float: left;
@@ -858,6 +862,10 @@ export function BubbleEditor({ bubbleId, isMobile }: BubbleEditorProps) {
           max-width: 100%;
           height: auto;
           border-radius: 0.5rem;
+        }
+        .tiptap-preview img[src$=".svg"] {
+          min-width: 100px;
+          min-height: 100px;
         }
       `}</style>
     </div>

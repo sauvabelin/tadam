@@ -185,6 +185,10 @@ export function BubbleContent({ bubbleId }: Props) {
           height: auto;
           border-radius: 0.5rem;
         }
+        .bubble-content img[src$=".svg"] {
+          min-width: 100px;
+          min-height: 100px;
+        }
         .bubble-content hr {
           border: none;
           border-top: 2px solid #e5e7eb;
