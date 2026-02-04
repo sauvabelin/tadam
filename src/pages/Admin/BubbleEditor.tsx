@@ -367,7 +367,12 @@ export function BubbleEditor({ bubbleId, isMobile }: BubbleEditorProps) {
 
   const handleImageInsert = (url: string, alt?: string) => {
     if (!editor) return
-    editor.chain().focus().setImage({ src: url, alt: alt || '' }).run()
+    const isSvg = url.toLowerCase().endsWith('.svg')
+    // SVGs need a default width since they often lack intrinsic dimensions
+    const attrs = isSvg
+      ? { src: url, alt: alt || '', containerStyle: 'width: 300px' }
+      : { src: url, alt: alt || '' }
+    editor.chain().focus().setImage(attrs).run()
   }
 
   if (!editor) {
@@ -803,10 +808,6 @@ export function BubbleEditor({ bubbleId, isMobile }: BubbleEditorProps) {
           border-radius: 0.5rem;
           box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
         }
-        .tiptap img[src$=".svg"] {
-          min-width: 100px;
-          min-height: 100px;
-        }
         .tiptap p.is-editor-empty:first-child::before {
           content: attr(data-placeholder);
           float: left;
@@ -862,10 +863,6 @@ export function BubbleEditor({ bubbleId, isMobile }: BubbleEditorProps) {
           max-width: 100%;
           height: auto;
           border-radius: 0.5rem;
-        }
-        .tiptap-preview img[src$=".svg"] {
-          min-width: 100px;
-          min-height: 100px;
         }
       `}</style>
     </div>
