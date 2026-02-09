@@ -32,6 +32,16 @@ export interface ImageData {
   created_at: string
 }
 
+export interface TabData {
+  id: number
+  bubble_id: string
+  tab_name: string
+  content: string | null
+  sort_order: number
+  created_at: string
+  updated_at: string
+}
+
 export interface BubbleData {
   id: number | null
   bubble_id: string
@@ -39,6 +49,7 @@ export interface BubbleData {
   category: string | null
   created_at: string | null
   updated_at: string | null
+  tabs: TabData[]
 }
 
 export interface ApiResponse {
@@ -121,6 +132,129 @@ export async function listBubbles(category?: string): Promise<BubbleData[]> {
     return await response.json()
   } catch (error) {
     console.error('Error listing bubbles:', error)
+    return []
+  }
+}
+
+// ============================================
+// TAB API FUNCTIONS
+// ============================================
+
+/**
+ * Create a new tab for a bubble
+ */
+export async function createTab(
+  bubbleId: string,
+  tabName: string
+): Promise<TabData | null> {
+  try {
+    const response = await fetch(`${API_BASE}/bubbles/${bubbleId}/tabs`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...getAuthHeaders(),
+      },
+      body: JSON.stringify({ tab_name: tabName }),
+    })
+
+    if (!response.ok) {
+      console.error('Failed to create tab:', response.status)
+      return null
+    }
+
+    return await response.json()
+  } catch (error) {
+    console.error('Error creating tab:', error)
+    return null
+  }
+}
+
+/**
+ * Update a tab's name and/or content
+ */
+export async function saveTab(
+  bubbleId: string,
+  tabId: number,
+  data: { tab_name?: string; content?: string }
+): Promise<TabData | null> {
+  try {
+    const response = await fetch(
+      `${API_BASE}/bubbles/${bubbleId}/tabs/${tabId}`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...getAuthHeaders(),
+        },
+        body: JSON.stringify(data),
+      }
+    )
+
+    if (!response.ok) {
+      console.error('Failed to save tab:', response.status)
+      return null
+    }
+
+    return await response.json()
+  } catch (error) {
+    console.error('Error saving tab:', error)
+    return null
+  }
+}
+
+/**
+ * Delete a tab
+ */
+export async function deleteTab(
+  bubbleId: string,
+  tabId: number
+): Promise<boolean> {
+  try {
+    const response = await fetch(
+      `${API_BASE}/bubbles/${bubbleId}/tabs/${tabId}`,
+      {
+        method: 'DELETE',
+        headers: {
+          ...getAuthHeaders(),
+        },
+      }
+    )
+
+    return response.ok
+  } catch (error) {
+    console.error('Error deleting tab:', error)
+    return false
+  }
+}
+
+/**
+ * Reorder tabs for a bubble
+ */
+export async function reorderTabs(
+  bubbleId: string,
+  tabIds: number[]
+): Promise<TabData[]> {
+  try {
+    const response = await fetch(
+      `${API_BASE}/bubbles/${bubbleId}/tabs/reorder`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...getAuthHeaders(),
+        },
+        body: JSON.stringify({ tab_ids: tabIds }),
+      }
+    )
+
+    if (!response.ok) {
+      console.error('Failed to reorder tabs:', response.status)
+      return []
+    }
+
+    return await response.json()
+  } catch (error) {
+    console.error('Error reordering tabs:', error)
     return []
   }
 }

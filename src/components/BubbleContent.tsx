@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import ReactMarkdown from 'react-markdown'
 import rehypeRaw from 'rehype-raw'
 import { BulleId } from '../types'
-import { getBubble } from '../api/bubbleApi'
+import { getBubble, type TabData } from '../api/bubbleApi'
 import { LoadingSpinner } from './LoadingSpinner'
 
 interface Props {
@@ -11,10 +11,11 @@ interface Props {
 
 export function BubbleContent({ bubbleId }: Props) {
   const [content, setContent] = useState<string | null>(null)
+  const [tabs, setTabs] = useState<TabData[]>([])
+  const [activeTabId, setActiveTabId] = useState<number | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
-  // here use a hook instead, useEffect is not recomended for fetching data
   useEffect(() => {
     let cancelled = false
 
@@ -26,10 +27,21 @@ export function BubbleContent({ bubbleId }: Props) {
         const bubble = await getBubble(bubbleId)
 
         if (!cancelled) {
-          if (bubble?.content) {
-            setContent(bubble.content)
+          const bubbleTabs = bubble?.tabs || []
+          setTabs(bubbleTabs)
+
+          if (bubbleTabs.length === 0) {
+            // No tabs: use bubble.content
+            setContent(bubble?.content || null)
+            setActiveTabId(null)
+          } else if (bubbleTabs.length === 1) {
+            // 1 tab: use tab content, no tab bar
+            setContent(bubbleTabs[0].content || null)
+            setActiveTabId(bubbleTabs[0].id)
           } else {
-            setContent(null)
+            // 2+ tabs: show tab bar, select first
+            setActiveTabId(bubbleTabs[0].id)
+            setContent(bubbleTabs[0].content || null)
           }
         }
       } catch (err) {
@@ -50,6 +62,11 @@ export function BubbleContent({ bubbleId }: Props) {
       cancelled = true
     }
   }, [bubbleId])
+
+  const handleTabClick = (tab: TabData) => {
+    setActiveTabId(tab.id)
+    setContent(tab.content || null)
+  }
 
   if (isLoading) {
     return (
@@ -89,28 +106,67 @@ export function BubbleContent({ bubbleId }: Props) {
     )
   }
 
-  if (!content) {
-    return (
-      <div
-        style={{
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          justifyContent: 'center',
-          height: '100%',
-          minHeight: '200px',
-          gap: '1rem',
-          color: '#6b7280',
-        }}
-      >
-        <p>Contenu en cours de redaction...</p>
-      </div>
-    )
-  }
+  const showTabBar = tabs.length >= 2
 
   return (
-    <div className="bubble-content" style={{ padding: '1rem' }}>
-      <ReactMarkdown rehypePlugins={[rehypeRaw]}>{content}</ReactMarkdown>
+    <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+      {showTabBar && (
+        <div
+          style={{
+            display: 'flex',
+            gap: '0.5rem',
+            padding: '0.75rem 1rem',
+            overflowX: 'auto',
+            flexShrink: 0,
+          }}
+        >
+          {tabs.map((tab) => (
+            <button
+              key={tab.id}
+              onClick={() => handleTabClick(tab)}
+              style={{
+                padding: '0.5rem 1.25rem',
+                fontSize: '0.95rem',
+                fontWeight: 700,
+                color: activeTabId === tab.id ? '#FFFEF5' : '#2D2D2D',
+                background: activeTabId === tab.id ? '#902212' : 'rgba(255, 254, 245, 0.7)',
+                border: '3px solid #2D2D2D',
+                borderRadius: '999px',
+                cursor: 'pointer',
+                whiteSpace: 'nowrap',
+                transition: 'all 0.2s',
+                boxShadow: activeTabId === tab.id
+                  ? '3px 3px 0px rgba(0, 0, 0, 0.2)'
+                  : '2px 2px 0px rgba(0, 0, 0, 0.1)',
+              }}
+            >
+              {tab.tab_name}
+            </button>
+          ))}
+        </div>
+      )}
+
+      {!content ? (
+        <div
+          style={{
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'center',
+            height: '100%',
+            minHeight: '200px',
+            gap: '1rem',
+            color: '#6b7280',
+          }}
+        >
+          <p>Contenu en cours de redaction...</p>
+        </div>
+      ) : (
+        <div className="bubble-content" style={{ padding: '1rem', flex: 1, overflow: 'auto' }}>
+          <ReactMarkdown rehypePlugins={[rehypeRaw]}>{content}</ReactMarkdown>
+        </div>
+      )}
+
       <style>{`
         .bubble-content {
           font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;

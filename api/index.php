@@ -33,7 +33,7 @@ function handleCors(array $allowedOrigins): void
         header("Access-Control-Allow-Origin: {$origin}");
     }
 
-    header('Access-Control-Allow-Methods: GET, POST, DELETE, OPTIONS');
+    header('Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS');
     header('Access-Control-Allow-Headers: Content-Type, Authorization');
     header('Access-Control-Max-Age: 86400');
 
@@ -274,7 +274,8 @@ if ($method === 'GET' && preg_match('#^/bubbles/([a-zA-Z]+)$#', $path, $matches)
             'content' => null,
             'category' => null,
             'created_at' => null,
-            'updated_at' => null
+            'updated_at' => null,
+            'tabs' => []
         ]);
     }
 
@@ -300,6 +301,100 @@ if ($method === 'POST' && preg_match('#^/bubbles/([a-zA-Z]+)$#', $path, $matches
         jsonResponse($bubble);
     } catch (\Exception $e) {
         errorResponse('Failed to save bubble: ' . $e->getMessage(), 500);
+    }
+}
+
+// ============================================
+// BUBBLE TAB ROUTES
+// ============================================
+
+// Route: POST /bubbles/{id}/tabs - Create a new tab
+if ($method === 'POST' && preg_match('#^/bubbles/([a-zA-Z]+)/tabs$#', $path, $matches)) {
+    $bubbleId = $matches[1];
+
+    if (!$controller->isValidBubbleId($bubbleId)) {
+        errorResponse('Invalid bubble ID', 400);
+    }
+
+    $data = getJsonBody();
+    $tabName = $data['tab_name'] ?? '';
+
+    if (empty($tabName)) {
+        errorResponse('Missing tab_name field', 400);
+    }
+
+    try {
+        $tab = $controller->createTab($bubbleId, $tabName, $data['content'] ?? null);
+        jsonResponse($tab, 201);
+    } catch (\Exception $e) {
+        errorResponse('Failed to create tab: ' . $e->getMessage(), 500);
+    }
+}
+
+// Route: POST /bubbles/{id}/tabs/reorder - Reorder tabs
+if ($method === 'POST' && preg_match('#^/bubbles/([a-zA-Z]+)/tabs/reorder$#', $path, $matches)) {
+    $bubbleId = $matches[1];
+
+    if (!$controller->isValidBubbleId($bubbleId)) {
+        errorResponse('Invalid bubble ID', 400);
+    }
+
+    $data = getJsonBody();
+    $tabIds = $data['tab_ids'] ?? [];
+
+    if (empty($tabIds) || !is_array($tabIds)) {
+        errorResponse('Missing or invalid tab_ids array', 400);
+    }
+
+    try {
+        $tabs = $controller->reorderTabs($bubbleId, $tabIds);
+        jsonResponse($tabs);
+    } catch (\Exception $e) {
+        errorResponse('Failed to reorder tabs: ' . $e->getMessage(), 500);
+    }
+}
+
+// Route: POST /bubbles/{id}/tabs/{tabId} - Update a tab
+if ($method === 'POST' && preg_match('#^/bubbles/([a-zA-Z]+)/tabs/(\d+)$#', $path, $matches)) {
+    $bubbleId = $matches[1];
+    $tabId = (int)$matches[2];
+
+    if (!$controller->isValidBubbleId($bubbleId)) {
+        errorResponse('Invalid bubble ID', 400);
+    }
+
+    $data = getJsonBody();
+
+    try {
+        $tab = $controller->updateTab($tabId, $bubbleId, $data);
+
+        if ($tab === null) {
+            errorResponse('Tab not found', 404);
+        }
+
+        jsonResponse($tab);
+    } catch (\Exception $e) {
+        errorResponse('Failed to update tab: ' . $e->getMessage(), 500);
+    }
+}
+
+// Route: DELETE /bubbles/{id}/tabs/{tabId} - Delete a tab
+if ($method === 'DELETE' && preg_match('#^/bubbles/([a-zA-Z]+)/tabs/(\d+)$#', $path, $matches)) {
+    $bubbleId = $matches[1];
+    $tabId = (int)$matches[2];
+
+    if (!$controller->isValidBubbleId($bubbleId)) {
+        errorResponse('Invalid bubble ID', 400);
+    }
+
+    try {
+        if ($controller->deleteTab($tabId, $bubbleId)) {
+            jsonResponse(['success' => true]);
+        } else {
+            errorResponse('Tab not found', 404);
+        }
+    } catch (\Exception $e) {
+        errorResponse('Failed to delete tab: ' . $e->getMessage(), 500);
     }
 }
 

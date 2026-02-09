@@ -14,6 +14,7 @@ import { Hike } from './components/Hike'
 import { Contact } from './components/Contact'
 import { Dons } from './components/Dons'
 import { Toast } from './components/Toast'
+import { Clouds } from './components/Clouds'
 import { DesktopElementConfig, bulleOffsets, bienvenueBulleOffsets, famillesBulleOffsets, componentWidths } from './types'
 
 // Desktop background dimensions from Ordi_Fond.svg viewBox
@@ -172,6 +173,9 @@ export function DesktopApp() {
               height: PAGE_HEIGHT,
             }}
           />
+
+          {/* Animated clouds in the sky */}
+          <Clouds />
 
           <Informations className="z-10" style={getElementStyle(elements.informations)} bulleOffset={bulleOffsets.informations} />
           <Bienvenue className="z-10" style={getElementStyle(elements.bienvenue)} bulleOffsets={bienvenueBulleOffsets} />

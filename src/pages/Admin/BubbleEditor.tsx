@@ -7,7 +7,15 @@ import Placeholder from '@tiptap/extension-placeholder'
 import { Markdown, MarkdownStorage } from 'tiptap-markdown'
 import { BulleId } from '../../types'
 import { Modal } from '../../components/Modal'
-import { getBubble, saveBubble } from '../../api/bubbleApi'
+import {
+  getBubble,
+  saveBubble,
+  createTab,
+  saveTab,
+  deleteTab,
+  reorderTabs,
+  type TabData,
+} from '../../api/bubbleApi'
 import { LinkModal } from '../../components/editor/LinkModal'
 import { LinkPopover } from '../../components/editor/LinkPopover'
 import { ImageUploadModal } from '../../components/editor/ImageUploadModal'
@@ -211,6 +219,12 @@ export function BubbleEditor({ bubbleId, isMobile }: BubbleEditorProps) {
   const [error, setError] = useState<string | null>(null)
   const [saveSuccess, setSaveSuccess] = useState(false)
 
+  // Tab state
+  const [tabs, setTabs] = useState<TabData[]>([])
+  const [activeTabId, setActiveTabId] = useState<number | null>(null)
+  const [editingTabName, setEditingTabName] = useState<number | null>(null)
+  const [editingTabNameValue, setEditingTabNameValue] = useState('')
+
   // Modal states
   const [isLinkModalOpen, setIsLinkModalOpen] = useState(false)
   const [isImageModalOpen, setIsImageModalOpen] = useState(false)
@@ -285,9 +299,19 @@ export function BubbleEditor({ bubbleId, isMobile }: BubbleEditorProps) {
 
     try {
       const bubble = await getBubble(bubbleId)
+      const bubbleTabs = bubble?.tabs || []
+      setTabs(bubbleTabs)
 
       if (editor) {
-        editor.commands.setContent(bubble?.content || '')
+        if (bubbleTabs.length > 0) {
+          // Load first tab's content
+          setActiveTabId(bubbleTabs[0].id)
+          editor.commands.setContent(bubbleTabs[0].content || '')
+        } else {
+          // No tabs: load bubble.content
+          setActiveTabId(null)
+          editor.commands.setContent(bubble?.content || '')
+        }
       }
     } catch (err) {
       console.error('Failed to load bubble:', err)
@@ -306,6 +330,20 @@ export function BubbleEditor({ bubbleId, isMobile }: BubbleEditorProps) {
     }
   }, [bubbleId, editor, loadContent])
 
+  const switchToTab = (tab: TabData) => {
+    if (!editor || tab.id === activeTabId) return
+
+    // Save current editor content to local state before switching
+    const storage = editor.storage as unknown as { markdown: MarkdownStorage }
+    const currentMarkdown = storage.markdown.getMarkdown()
+    if (activeTabId !== null) {
+      setTabs((prev) => prev.map((t) => (t.id === activeTabId ? { ...t, content: currentMarkdown } : t)))
+    }
+
+    setActiveTabId(tab.id)
+    editor.commands.setContent(tab.content || '')
+  }
+
   const handleSave = async () => {
     if (!editor || isSaving) return
 
@@ -315,21 +353,124 @@ export function BubbleEditor({ bubbleId, isMobile }: BubbleEditorProps) {
 
     try {
       const storage = editor.storage as unknown as { markdown: MarkdownStorage }
-      const markdown = storage.markdown.getMarkdown()
+      const currentMarkdown = storage.markdown.getMarkdown()
 
-      const result = await saveBubble(bubbleId, markdown)
+      if (tabs.length > 0) {
+        // Update active tab's content in local state first
+        const updatedTabs = tabs.map((t) =>
+          t.id === activeTabId ? { ...t, content: currentMarkdown } : t
+        )
+        setTabs(updatedTabs)
 
-      if (result.success) {
-        setSaveSuccess(true)
-        setTimeout(() => setSaveSuccess(false), 2000)
+        // Save all tabs to the server
+        let allOk = true
+        for (const tab of updatedTabs) {
+          const updated = await saveTab(bubbleId, tab.id, { content: tab.content ?? '' })
+          if (!updated) {
+            allOk = false
+          }
+        }
+
+        if (allOk) {
+          setSaveSuccess(true)
+          setTimeout(() => setSaveSuccess(false), 2000)
+        } else {
+          setError('Erreur lors de la sauvegarde de certains onglets')
+        }
       } else {
-        setError(result.error || 'Erreur lors de la sauvegarde')
+        // Save to bubble.content (no tabs mode)
+        const result = await saveBubble(bubbleId, currentMarkdown)
+        if (result.success) {
+          setSaveSuccess(true)
+          setTimeout(() => setSaveSuccess(false), 2000)
+        } else {
+          setError(result.error || 'Erreur lors de la sauvegarde')
+        }
       }
     } catch (err) {
       console.error('Save error:', err)
       setError('Erreur lors de la sauvegarde')
     } finally {
       setIsSaving(false)
+    }
+  }
+
+  const handleAddTab = async () => {
+    try {
+      const tab = await createTab(bubbleId, 'Nouvel onglet')
+      if (tab) {
+        setTabs((prev) => [...prev, tab])
+        // Switch to the new tab
+        setActiveTabId(tab.id)
+        if (editor) {
+          editor.commands.setContent(tab.content || '')
+        }
+      }
+    } catch (err) {
+      console.error('Failed to create tab:', err)
+      setError('Erreur lors de la creation de l\'onglet')
+    }
+  }
+
+  const handleDeleteTab = async (tabId: number) => {
+    if (!confirm('Supprimer cet onglet ?')) return
+
+    try {
+      const success = await deleteTab(bubbleId, tabId)
+      if (success) {
+        const remaining = tabs.filter((t) => t.id !== tabId)
+        setTabs(remaining)
+
+        if (activeTabId === tabId) {
+          if (remaining.length > 0) {
+            // Switch to first remaining tab
+            setActiveTabId(remaining[0].id)
+            if (editor) {
+              editor.commands.setContent(remaining[0].content || '')
+            }
+          } else {
+            // No tabs left, revert to bubble.content mode
+            setActiveTabId(null)
+            const bubble = await getBubble(bubbleId)
+            if (editor) {
+              editor.commands.setContent(bubble?.content || '')
+            }
+          }
+        }
+      }
+    } catch (err) {
+      console.error('Failed to delete tab:', err)
+      setError('Erreur lors de la suppression de l\'onglet')
+    }
+  }
+
+  const handleRenameTab = async (tabId: number, newName: string) => {
+    if (!newName.trim()) return
+    try {
+      const updated = await saveTab(bubbleId, tabId, { tab_name: newName.trim() })
+      if (updated) {
+        setTabs((prev) => prev.map((t) => (t.id === tabId ? { ...t, tab_name: newName.trim() } : t)))
+      }
+    } catch (err) {
+      console.error('Failed to rename tab:', err)
+    }
+    setEditingTabName(null)
+  }
+
+  const handleMoveTab = async (tabId: number, direction: 'up' | 'down') => {
+    const idx = tabs.findIndex((t) => t.id === tabId)
+    if (idx === -1) return
+    const swapIdx = direction === 'up' ? idx - 1 : idx + 1
+    if (swapIdx < 0 || swapIdx >= tabs.length) return
+
+    const newTabs = [...tabs]
+    ;[newTabs[idx], newTabs[swapIdx]] = [newTabs[swapIdx], newTabs[idx]]
+    setTabs(newTabs)
+
+    try {
+      await reorderTabs(bubbleId, newTabs.map((t) => t.id))
+    } catch (err) {
+      console.error('Failed to reorder tabs:', err)
     }
   }
 
@@ -518,6 +659,151 @@ export function BubbleEditor({ bubbleId, isMobile }: BubbleEditorProps) {
             {isSaving ? 'Sauvegarde...' : 'Sauvegarder'}
           </button>
         </div>
+      </div>
+
+      {/* Tab bar */}
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: '0.5rem',
+          marginBottom: '0.75rem',
+          flexWrap: 'wrap',
+        }}
+      >
+        {tabs.map((tab, idx) => (
+          <div
+            key={tab.id}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.375rem',
+              padding: '0.4rem 0.5rem 0.4rem 1rem',
+              background: activeTabId === tab.id ? '#902212' : '#FFFEF5',
+              border: '3px solid #2D2D2D',
+              borderRadius: '999px',
+              cursor: 'pointer',
+              transition: 'all 0.2s',
+              boxShadow: activeTabId === tab.id
+                ? '3px 3px 0px rgba(0, 0, 0, 0.2)'
+                : '2px 2px 0px rgba(0, 0, 0, 0.1)',
+            }}
+            onClick={() => switchToTab(tab)}
+          >
+            {editingTabName === tab.id ? (
+              <input
+                autoFocus
+                value={editingTabNameValue}
+                onChange={(e) => setEditingTabNameValue(e.target.value)}
+                onBlur={() => handleRenameTab(tab.id, editingTabNameValue)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') handleRenameTab(tab.id, editingTabNameValue)
+                  if (e.key === 'Escape') setEditingTabName(null)
+                }}
+                onClick={(e) => e.stopPropagation()}
+                style={{
+                  fontSize: '0.875rem',
+                  fontWeight: 600,
+                  border: '2px solid #902212',
+                  borderRadius: '0.5rem',
+                  padding: '0.125rem 0.5rem',
+                  background: '#FFFEF5',
+                  outline: 'none',
+                  width: '110px',
+                  color: '#2D2D2D',
+                }}
+              />
+            ) : (
+              <span
+                onDoubleClick={(e) => {
+                  e.stopPropagation()
+                  setEditingTabName(tab.id)
+                  setEditingTabNameValue(tab.tab_name)
+                }}
+                style={{
+                  fontSize: '0.875rem',
+                  fontWeight: 700,
+                  color: activeTabId === tab.id ? '#FFFEF5' : '#2D2D2D',
+                  userSelect: 'none',
+                }}
+              >
+                {tab.tab_name}
+              </span>
+            )}
+
+            {/* Move arrows */}
+            {idx > 0 && (
+              <button
+                onClick={(e) => { e.stopPropagation(); handleMoveTab(tab.id, 'up') }}
+                title="Deplacer a gauche"
+                style={{
+                  background: 'none', border: 'none', cursor: 'pointer', padding: '0 2px',
+                  fontSize: '0.65rem',
+                  color: activeTabId === tab.id ? '#FFFEF5' : '#6b7280',
+                  lineHeight: 1, opacity: 0.7,
+                }}
+              >
+                &#9664;
+              </button>
+            )}
+            {idx < tabs.length - 1 && (
+              <button
+                onClick={(e) => { e.stopPropagation(); handleMoveTab(tab.id, 'down') }}
+                title="Deplacer a droite"
+                style={{
+                  background: 'none', border: 'none', cursor: 'pointer', padding: '0 2px',
+                  fontSize: '0.65rem',
+                  color: activeTabId === tab.id ? '#FFFEF5' : '#6b7280',
+                  lineHeight: 1, opacity: 0.7,
+                }}
+              >
+                &#9654;
+              </button>
+            )}
+
+            {/* Delete button */}
+            <button
+              onClick={(e) => { e.stopPropagation(); handleDeleteTab(tab.id) }}
+              title="Supprimer l'onglet"
+              style={{
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                background: activeTabId === tab.id ? 'rgba(255,255,255,0.25)' : '#ECE5DE',
+                border: 'none', cursor: 'pointer',
+                width: '1.25rem', height: '1.25rem',
+                borderRadius: '50%',
+                fontSize: '0.8rem',
+                color: activeTabId === tab.id ? '#FFFEF5' : '#902212',
+                lineHeight: 1, fontWeight: 700,
+              }}
+            >
+              &times;
+            </button>
+          </div>
+        ))}
+
+        {/* Add tab button */}
+        <button
+          onClick={handleAddTab}
+          title="Ajouter un onglet"
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            width: '2.25rem',
+            height: '2.25rem',
+            background: '#ECE5DE',
+            border: '3px solid #2D2D2D',
+            borderRadius: '50%',
+            cursor: 'pointer',
+            fontSize: '1.25rem',
+            fontWeight: 700,
+            color: '#902212',
+            lineHeight: 1,
+            boxShadow: '2px 2px 0px rgba(0, 0, 0, 0.1)',
+          }}
+        >
+          +
+        </button>
       </div>
 
       {/* Editor container */}
