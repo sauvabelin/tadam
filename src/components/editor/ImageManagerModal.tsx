@@ -65,7 +65,7 @@ export function ImageManagerModal({ isOpen, onClose, onInsert }: ImageManagerMod
   )
 
   const handleCleanupUnused = useCallback(async () => {
-    if (!confirm('Supprimer toutes les images non utilisees?')) return
+    if (!confirm('Supprimer toutes les images non utilisées ?')) return
 
     setIsDeleting(true)
     const count = await cleanupUnusedImages()
@@ -236,7 +236,7 @@ export function ImageManagerModal({ isOpen, onClose, onInsert }: ImageManagerMod
                 color: filter === 'unused' ? 'white' : unusedCount > 0 ? '#dc2626' : '#374151',
               }}
             >
-              Non utilisees ({unusedCount})
+              Non utilisées ({unusedCount})
             </button>
           </div>
 
@@ -289,7 +289,7 @@ export function ImageManagerModal({ isOpen, onClose, onInsert }: ImageManagerMod
             </div>
           ) : filteredImages.length === 0 ? (
             <div style={{ textAlign: 'center', padding: '2rem', color: '#6b7280' }}>
-              {searchTerm ? 'Aucun resultat' : 'Aucune image'}
+              {searchTerm ? 'Aucun résultat' : 'Aucune image'}
             </div>
           ) : (
             <div
@@ -351,7 +351,7 @@ export function ImageManagerModal({ isOpen, onClose, onInsert }: ImageManagerMod
                           borderRadius: '4px',
                         }}
                       >
-                        Non utilisee
+                        Non utilisée
                       </div>
                     )}
 
@@ -441,7 +441,7 @@ export function ImageManagerModal({ isOpen, onClose, onInsert }: ImageManagerMod
                                 color: 'white',
                               }}
                             >
-                              Inserer
+                              Insérer
                             </button>
                           )}
                           <button

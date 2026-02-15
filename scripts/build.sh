@@ -3,9 +3,16 @@ set -e
 
 echo "=== Building Tadam Festival ==="
 
-# Clean dist folder
+# Clean dist folder (preserve uploads)
 echo "Cleaning dist folder..."
+if [ -d dist/uploads ]; then
+  mv dist/uploads /tmp/tadam-uploads-backup
+fi
 rm -rf dist
+if [ -d /tmp/tadam-uploads-backup ]; then
+  mkdir -p dist
+  mv /tmp/tadam-uploads-backup dist/uploads
+fi
 
 # Build frontend with Vite
 echo "Building frontend..."
@@ -21,11 +28,18 @@ cp api/index.php dist/api/
 cp api/composer.json dist/api/
 cp api/composer.lock dist/api/ 2>/dev/null || true
 cp api/.htaccess dist/api/
+if [ -d api/fonts ]; then
+  cp -r api/fonts dist/api/
+fi
+if [ -d public/assets/Stamps ]; then
+  mkdir -p dist/api/stamps
+  cp public/assets/Stamps/*.png dist/api/stamps/
+fi
 
 # Install composer dependencies
 echo "Installing PHP dependencies..."
 cd dist/api
-composer install --no-dev --optimize-autoloader --no-interaction
+composer install --no-dev --optimize-autoloader --no-interaction --ignore-platform-reqs
 cd ../..
 
 # Create uploads directory structure (at root level to match URL /uploads/images/)

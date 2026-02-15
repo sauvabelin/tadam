@@ -8,7 +8,7 @@ export type BulleId =
   | 'patatra' | 'fantasia' | 'lamifa' | 'zampazzi'
 
 // Category types for admin sidebar
-export type BubbleCategory = 'journal' | 'lettres' | 'pages'
+export type BubbleCategory = 'pages'
 
 export interface CategoryConfig {
   id: BubbleCategory
@@ -17,14 +17,12 @@ export interface CategoryConfig {
 }
 
 export const BUBBLE_CATEGORIES: CategoryConfig[] = [
-  { id: 'journal', label: 'Journal', bubbles: ['journal'] },
-  { id: 'lettres', label: 'Lettres', bubbles: ['lettres'] },
   {
     id: 'pages',
     label: 'Pages',
     bubbles: [
-      'informations', 'train', 'chapiteau', 'inspectionDesSacs',
-      'hike', 'concert', 'bouffe', 'contact', 'dons',
+      'informations', 'train', 'chapiteau', 'lettres', 'inspectionDesSacs',
+      'hike', 'concert', 'bouffe', 'journal', 'contact', 'dons',
       'inscription', 'bienvenue', 'patatra', 'fantasia', 'lamifa', 'zampazzi'
     ]
   },

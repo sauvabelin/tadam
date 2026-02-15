@@ -19,6 +19,7 @@ $config = require __DIR__ . '/config/config.php';
 use Tadam\AuthController;
 use Tadam\BubbleController;
 use Tadam\ImageController;
+use Tadam\PostcardController;
 use Tadam\Migrator;
 use Tadam\RateLimiter;
 
@@ -238,8 +239,67 @@ if ($method === 'GET' && $path === '/status') {
     }
 }
 
-// Public endpoint check (GET requests don't require auth, except for listing images)
-$requiresAuth = $method !== 'GET' || str_starts_with($path, '/images');
+// ============================================
+// PUBLIC POSTCARD ROUTES (before auth check)
+// ============================================
+
+$postcardController = new PostcardController();
+
+// Route: GET /postcards/backgrounds - List active backgrounds (public)
+if ($method === 'GET' && $path === '/postcards/backgrounds') {
+    try {
+        $backgrounds = $postcardController->listBackgrounds(true);
+        jsonResponse($backgrounds);
+    } catch (\Exception $e) {
+        errorResponse('Failed to list backgrounds: ' . $e->getMessage(), 500);
+    }
+}
+
+// Route: POST /postcards/preview - Preview postcard as PDF (public)
+if ($method === 'POST' && $path === '/postcards/preview') {
+    $clientIp = trim(explode(',', $_SERVER['HTTP_X_FORWARDED_FOR'] ?? $_SERVER['REMOTE_ADDR'] ?? 'unknown')[0]);
+    $previewLimiter = new RateLimiter(60, 300); // 60 per 5 minutes
+    if (!$previewLimiter->isAllowed('preview:' . $clientIp)) {
+        errorResponse('Trop de requetes. Reessaie dans quelques minutes.', 429);
+    }
+    $previewLimiter->record('preview:' . $clientIp);
+
+    $data = getJsonBody();
+    try {
+        $pdfContent = $postcardController->previewPdf($data);
+        header('Content-Type: application/pdf');
+        header('Content-Length: ' . strlen($pdfContent));
+        echo $pdfContent;
+        exit;
+    } catch (\Exception $e) {
+        errorResponse('Failed to generate preview: ' . $e->getMessage(), 500);
+    }
+}
+
+// Route: POST /postcards - Submit a postcard (public)
+if ($method === 'POST' && $path === '/postcards') {
+    $clientIp = trim(explode(',', $_SERVER['HTTP_X_FORWARDED_FOR'] ?? $_SERVER['REMOTE_ADDR'] ?? 'unknown')[0]);
+    $submitLimiter = new RateLimiter(20, 300); // 20 per 5 minutes
+    if (!$submitLimiter->isAllowed('postcard:' . $clientIp)) {
+        errorResponse('Trop de soumissions. Reessaie dans quelques minutes.', 429);
+    }
+    $submitLimiter->record('postcard:' . $clientIp);
+
+    $data = getJsonBody();
+    try {
+        $result = $postcardController->submitPostcard($data);
+        jsonResponse($result, 201);
+    } catch (\InvalidArgumentException $e) {
+        errorResponse($e->getMessage(), 400);
+    } catch (\Exception $e) {
+        errorResponse('Failed to submit postcard: ' . $e->getMessage(), 500);
+    }
+}
+
+// Public endpoint check (GET requests don't require auth, except for images and postcards admin routes)
+$requiresAuth = $method !== 'GET'
+    || str_starts_with($path, '/images')
+    || str_starts_with($path, '/postcards');
 
 // Authenticate for non-GET requests
 if ($requiresAuth && !authenticate($authController)) {
@@ -468,6 +528,135 @@ if ($method === 'DELETE' && preg_match('#^/images/(\d+)$#', $path, $matches)) {
     } catch (\Exception $e) {
         error_log('Failed to delete image: ' . $e->getMessage());
         errorResponse('Failed to delete image: ' . $e->getMessage(), 500);
+    }
+}
+
+// ============================================
+// ADMIN POSTCARD ROUTES (auth required)
+// ============================================
+
+// Route: GET /postcards/backgrounds/all - List all backgrounds (admin)
+if ($method === 'GET' && $path === '/postcards/backgrounds/all') {
+    try {
+        $backgrounds = $postcardController->listBackgrounds(false);
+        jsonResponse($backgrounds);
+    } catch (\Exception $e) {
+        errorResponse('Failed to list backgrounds: ' . $e->getMessage(), 500);
+    }
+}
+
+// Route: POST /postcards/backgrounds - Add background
+if ($method === 'POST' && $path === '/postcards/backgrounds') {
+    $data = getJsonBody();
+    $imageId = $data['image_id'] ?? null;
+    $label = $data['label'] ?? null;
+
+    if (!$imageId) {
+        errorResponse('Missing image_id', 400);
+    }
+
+    try {
+        $bg = $postcardController->addBackground((int)$imageId, $label);
+        jsonResponse($bg, 201);
+    } catch (\InvalidArgumentException $e) {
+        errorResponse($e->getMessage(), 400);
+    } catch (\Exception $e) {
+        errorResponse('Failed to add background: ' . $e->getMessage(), 500);
+    }
+}
+
+// Route: POST /postcards/backgrounds/{id} - Update background
+if ($method === 'POST' && preg_match('#^/postcards/backgrounds/(\d+)$#', $path, $matches)) {
+    $bgId = (int)$matches[1];
+    $data = getJsonBody();
+
+    try {
+        $bg = $postcardController->updateBackground($bgId, $data);
+        if (!$bg) {
+            errorResponse('Background not found', 404);
+        }
+        jsonResponse($bg);
+    } catch (\Exception $e) {
+        errorResponse('Failed to update background: ' . $e->getMessage(), 500);
+    }
+}
+
+// Route: DELETE /postcards/backgrounds/{id} - Delete background
+if ($method === 'DELETE' && preg_match('#^/postcards/backgrounds/(\d+)$#', $path, $matches)) {
+    $bgId = (int)$matches[1];
+
+    try {
+        if ($postcardController->deleteBackground($bgId)) {
+            jsonResponse(['success' => true]);
+        } else {
+            errorResponse('Background not found', 404);
+        }
+    } catch (\Exception $e) {
+        errorResponse('Failed to delete background: ' . $e->getMessage(), 500);
+    }
+}
+
+// Route: GET /postcards/export/{backgroundId} - Export PDF
+if ($method === 'GET' && preg_match('#^/postcards/export/(\d+)$#', $path, $matches)) {
+    $bgId = (int)$matches[1];
+    $from = $_GET['from'] ?? null;
+    $to = $_GET['to'] ?? null;
+
+    try {
+        $pdfContent = $postcardController->exportPdf($bgId, $from, $to);
+        header('Content-Type: application/pdf');
+        header('Content-Disposition: attachment; filename="postcards_bg' . $bgId . '.pdf"');
+        header('Content-Length: ' . strlen($pdfContent));
+        echo $pdfContent;
+        exit;
+    } catch (\InvalidArgumentException $e) {
+        errorResponse($e->getMessage(), 400);
+    } catch (\Exception $e) {
+        errorResponse('Failed to export PDF: ' . $e->getMessage(), 500);
+    }
+}
+
+// Route: GET /postcards - List postcards (admin)
+if ($method === 'GET' && $path === '/postcards') {
+    $from = $_GET['from'] ?? null;
+    $to = $_GET['to'] ?? null;
+    $backgroundId = isset($_GET['background_id']) ? (int)$_GET['background_id'] : null;
+
+    try {
+        $postcards = $postcardController->listPostcards($from, $to, $backgroundId);
+        jsonResponse($postcards);
+    } catch (\Exception $e) {
+        errorResponse('Failed to list postcards: ' . $e->getMessage(), 500);
+    }
+}
+
+// Route: GET /postcards/{id} - Get single postcard
+if ($method === 'GET' && preg_match('#^/postcards/(\d+)$#', $path, $matches)) {
+    $postcardId = (int)$matches[1];
+
+    try {
+        $postcard = $postcardController->getPostcard($postcardId);
+        if (!$postcard) {
+            errorResponse('Postcard not found', 404);
+        }
+        jsonResponse($postcard);
+    } catch (\Exception $e) {
+        errorResponse('Failed to get postcard: ' . $e->getMessage(), 500);
+    }
+}
+
+// Route: DELETE /postcards/{id} - Delete postcard
+if ($method === 'DELETE' && preg_match('#^/postcards/(\d+)$#', $path, $matches)) {
+    $postcardId = (int)$matches[1];
+
+    try {
+        if ($postcardController->deletePostcard($postcardId)) {
+            jsonResponse(['success' => true]);
+        } else {
+            errorResponse('Postcard not found', 404);
+        }
+    } catch (\Exception $e) {
+        errorResponse('Failed to delete postcard: ' . $e->getMessage(), 500);
     }
 }
 
