@@ -8,7 +8,17 @@ const createBubbleContent = (id: BulleId) => () => <BubbleContent bubbleId={id} 
 export const modalContentRegistry: Record<BulleId, () => ReactNode> = {
   informations: createBubbleContent('informations'),
   train: createBubbleContent('train'),
-  chapiteau: createBubbleContent('chapiteau'),
+  chapiteau: () => (
+    <div style={{ width: '100%', maxHeight: '80vh', aspectRatio: '16 / 9' }}>
+      <iframe
+        src="https://www.youtube-nocookie.com/embed/Kb3s3ss0E2w?autoplay=1"
+        title="Chapiteau"
+        style={{ width: '100%', height: '100%', border: 'none' }}
+        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+        allowFullScreen
+      />
+    </div>
+  ),
   lettres: createBubbleContent('lettres'),
   inspectionDesSacs: createBubbleContent('inspectionDesSacs'),
   hike: createBubbleContent('hike'),
