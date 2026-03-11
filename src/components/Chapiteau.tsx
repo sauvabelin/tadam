@@ -4,10 +4,10 @@ import { Bulle } from './Bulle'
 interface Props {
   className?: string
   style?: CSSProperties
-  bulleOffset?: { x: number; y: number; width: number }
+  bulleOffsets?: Record<string, { x: number; y: number; width: number }>
 }
 
-export const Chapiteau: React.FC<Props> = ({ className, style, bulleOffset }) => {
+export const Chapiteau: React.FC<Props> = ({ className, style, bulleOffsets }) => {
   const [isLoading, setIsLoading] = useState(true)
 
   return (
@@ -46,14 +46,24 @@ export const Chapiteau: React.FC<Props> = ({ className, style, bulleOffset }) =>
           transition: 'opacity 0.3s ease',
         }}
       />
-      {bulleOffset && (
+      {bulleOffsets?.chapiteau && (
         <Bulle
           id="chapiteau"
           src="/assets/trailer_bulle.svg"
           alt="Trailer"
-          offsetX={bulleOffset.x}
-          offsetY={bulleOffset.y}
-          width={bulleOffset.width}
+          offsetX={bulleOffsets.chapiteau.x}
+          offsetY={bulleOffsets.chapiteau.y}
+          width={bulleOffsets.chapiteau.width}
+        />
+      )}
+      {bulleOffsets?.serigraphie && (
+        <Bulle
+          id="serigraphie"
+          src="/assets/serigraphie_bulle.svg"
+          alt="Concours de sérigraphie"
+          offsetX={bulleOffsets.serigraphie.x}
+          offsetY={bulleOffsets.serigraphie.y}
+          width={bulleOffsets.serigraphie.width}
         />
       )}
       <style>{`

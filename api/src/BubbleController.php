@@ -15,7 +15,8 @@ class BubbleController
         'pages' => [
             'informations', 'train', 'chapiteau', 'inspectionDesSacs',
             'hike', 'concert', 'bouffe', 'contact', 'dons',
-            'inscription', 'bienvenue', 'patatra', 'fantasia', 'lamifa', 'zampazzi'
+            'inscription', 'bienvenue', 'patatra', 'fantasia', 'lamifa', 'zampazzi',
+            'serigraphie'
         ]
     ];
 

@@ -16,7 +16,7 @@ import { Titre } from './components/Titre'
 import { Contact } from './components/Contact'
 import { Dons } from './components/Dons'
 import { Toast } from './components/Toast'
-import { ElementConfig, bulleOffsets, bienvenueBulleOffsets, famillesBulleOffsets, componentWidths } from './types'
+import { ElementConfig, bulleOffsets, bienvenueBulleOffsets, famillesBulleOffsets, chapiteauBulleOffsets, componentWidths } from './types'
 
 // Page dimensions from the background SVG (fixed coordinate system)
 const PAGE_WIDTH = 756
@@ -321,7 +321,7 @@ export function MobileApp() {
           <Informations className="z-10" style={getElementStyle(elements.informations)} bulleOffset={bulleOffsets.informations} />
           <Bienvenue className="z-10" style={getElementStyle(elements.bienvenue)} bulleOffsets={bienvenueBulleOffsets} />
           <Train className="z-10" style={getElementStyle(elements.train)} bulleOffset={bulleOffsets.train} />
-          <Chapiteau className="z-10" style={getElementStyle(elements.chapiteau)} bulleOffset={bulleOffsets.chapiteau} />
+          <Chapiteau className="z-10" style={getElementStyle(elements.chapiteau)} bulleOffsets={chapiteauBulleOffsets} />
           <Lettres className="z-10" style={getElementStyle(elements.lettres)} bulleOffset={bulleOffsets.lettres} />
           <InspectionDesSacs className="z-10" style={getElementStyle(elements.inspectionDesSacs)} bulleOffset={bulleOffsets.inspectionDesSacs} />
           <Hike className="z-10" style={getElementStyle(elements.hike)} bulleOffset={bulleOffsets.hike} />

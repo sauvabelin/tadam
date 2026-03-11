@@ -33,4 +33,5 @@ export const modalContentRegistry: Record<BulleId, () => ReactNode> = {
   fantasia: createBubbleContent('fantasia'),
   lamifa: createBubbleContent('lamifa'),
   zampazzi: createBubbleContent('zampazzi'),
+  serigraphie: createBubbleContent('serigraphie'),
 }
