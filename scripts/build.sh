@@ -3,15 +3,14 @@ set -e
 
 echo "=== Building Tadam Festival ==="
 
-# Clean dist folder (preserve uploads)
-echo "Cleaning dist folder..."
-if [ -d dist/uploads ]; then
-  mv dist/uploads /tmp/tadam-uploads-backup
-fi
-rm -rf dist
-if [ -d /tmp/tadam-uploads-backup ]; then
+# Clean dist contents except uploads/ — admin-uploaded images live there and
+# must survive rebuilds. Doing this in-place (no /tmp shuffle) means a build
+# crash can't strand uploads in a stale backup dir on the next run.
+echo "Cleaning dist folder (preserving uploads)..."
+if [ -d dist ]; then
+  find dist -mindepth 1 -maxdepth 1 -not -name 'uploads' -exec rm -rf {} +
+else
   mkdir -p dist
-  mv /tmp/tadam-uploads-backup dist/uploads
 fi
 
 # Build frontend with Vite
