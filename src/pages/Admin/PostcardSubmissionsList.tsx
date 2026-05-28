@@ -3,7 +3,7 @@ import {
   listPostcards,
   listAllBackgrounds,
   deletePostcard,
-  getExportUrl,
+  fetchExportPdf,
   type Postcard,
   type PostcardBackground,
 } from '../../api/postcardApi'
@@ -54,9 +54,22 @@ export function PostcardSubmissionsList({ isMobile }: Props) {
     setPostcards((prev) => prev.filter((p) => p.id !== id))
   }
 
-  const handleExport = (bgId: number) => {
-    const url = getExportUrl(bgId, fromDate || undefined, toDate || undefined)
-    window.open(url, '_blank')
+  const handleExport = async (bgId: number) => {
+    // window.open can't send the Bearer header; fetch the blob with auth and
+    // trigger a download via a transient anchor.
+    const result = await fetchExportPdf(bgId, fromDate || undefined, toDate || undefined)
+    if (!result.ok) {
+      setError(`Export: ${result.error}`)
+      return
+    }
+    const url = URL.createObjectURL(result.data)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `postcards_bg${bgId}.pdf`
+    document.body.appendChild(a)
+    a.click()
+    document.body.removeChild(a)
+    URL.revokeObjectURL(url)
   }
 
   const stripHtml = (html: string) => {

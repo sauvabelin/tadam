@@ -162,10 +162,14 @@ export function deletePostcard(id: number): Promise<Result<void>> {
   return apiJson(`/postcards/${id}`, { method: 'DELETE' })
 }
 
-export function getExportUrl(backgroundId: number, from?: string, to?: string): string {
-  const params = new URLSearchParams()
-  if (from) params.set('from', from)
-  if (to) params.set('to', to)
-  const qs = params.toString()
-  return `${API_BASE}/postcards/export/${backgroundId}${qs ? '?' + qs : ''}`
+export function fetchExportPdf(
+  backgroundId: number,
+  from?: string,
+  to?: string
+): Promise<Result<Blob>> {
+  const sp = new URLSearchParams()
+  if (from) sp.set('from', from)
+  if (to) sp.set('to', to)
+  const qs = sp.toString()
+  return apiBlob(`/postcards/export/${backgroundId}${qs ? '?' + qs : ''}`)
 }

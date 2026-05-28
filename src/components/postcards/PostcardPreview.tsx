@@ -102,11 +102,14 @@ export function PostcardPreview({
         Aperçu de ta carte
       </h3>
 
-      {/* Card container with 3D flip */}
+      {/* Card container with 3D flip — sized at A6 (148×105mm) using CSS mm
+          units so the on-screen preview matches the printed dimensions; falls
+          back to 100% width on narrower viewports. */}
       <div
         style={{
           perspective: '1000px',
-          maxWidth: `${Math.round(360 * CARD_ASPECT)}px`,
+          width: '148mm',
+          maxWidth: '100%',
           margin: '0 auto',
         }}
       >

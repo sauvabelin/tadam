@@ -3,6 +3,7 @@
 namespace Tadam;
 
 use DB;
+use Incenteev\EmojiPattern\EmojiPattern;
 
 class PostcardController
 {
@@ -298,23 +299,14 @@ class PostcardController
     /**
      * Replace emoji in $text with <img> tags pointing at Noto Color Emoji PNGs.
      *
-     * Matches emoji as semantic units: ZWJ sequences (👨‍👩‍👧), skin-tone
-     * modifiers (👋🏽), keycaps (1️⃣) and country flags (🇨🇭) each become a
-     * single <img>, not one per codepoint. Falls back to leaving the
-     * original text in place if the regex engine fails.
+     * Uses incenteev/emoji-pattern, which generates the matcher from the
+     * official Unicode emoji data files (covers ZWJ sequences, skin-tone
+     * modifiers, keycaps, flags, combining marks). Falls back to leaving
+     * the original text in place if the regex engine errors.
      */
     private function emojisToImages(string $text): string
     {
-        $pattern = '/
-            [0-9#*]\x{FE0F}?\x{20E3}                              # keycap (digit/#/* + optional VS + enclosing keycap)
-            | [\x{1F1E6}-\x{1F1FF}]{2}                            # country flag (two regional indicators)
-            | \p{Extended_Pictographic}
-              (?:\x{FE0F}|[\x{1F3FB}-\x{1F3FF}])?                 # optional emoji-VS or skin-tone modifier
-              (?:\x{200D}                                         # ZWJ sequence: joined emoji
-                \p{Extended_Pictographic}
-                (?:\x{FE0F}|[\x{1F3FB}-\x{1F3FF}])?
-              )*
-        /ux';
+        $pattern = '/' . EmojiPattern::getEmojiPattern() . '/u';
 
         $result = preg_replace_callback($pattern, function ($match) {
             $url = $this->emojiUrl($match[0]);
