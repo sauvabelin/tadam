@@ -23,8 +23,12 @@ export function PostcardBackgroundManager({ isMobile }: Props) {
 
   const fetchBackgrounds = async () => {
     setLoading(true)
-    const bgs = await listAllBackgrounds()
-    setBackgrounds(bgs)
+    const result = await listAllBackgrounds()
+    if (result.ok) {
+      setBackgrounds(result.data)
+    } else {
+      setError(`Chargement des fonds: ${result.error}`)
+    }
     setLoading(false)
   }
 
@@ -41,24 +45,37 @@ export function PostcardBackgroundManager({ isMobile }: Props) {
   const handleUploadAndAdd = async (file: File) => {
     setUploading(true)
     setError(null)
+    let compressed: File
     try {
-      const compressed = await compressImage(file)
-      const { data: image, error: uploadError } = await uploadImage(compressed)
-      if (image) {
-        await addBackground(image.id)
-        await fetchBackgrounds()
-        setShowImagePicker(false)
-      } else {
-        setError(uploadError || "Erreur lors de l'upload")
-      }
+      compressed = await compressImage(file)
     } catch {
       setError("Erreur lors de la compression de l'image")
+      setUploading(false)
+      return
     }
+    const { data: image, error: uploadError } = await uploadImage(compressed)
+    if (!image) {
+      setError(uploadError || "Erreur lors de l'upload")
+      setUploading(false)
+      return
+    }
+    const addResult = await addBackground(image.id)
+    if (!addResult.ok) {
+      setError(`Ajout du fond: ${addResult.error}`)
+      setUploading(false)
+      return
+    }
+    await fetchBackgrounds()
+    setShowImagePicker(false)
     setUploading(false)
   }
 
   const handlePickExisting = async (imageId: number) => {
-    await addBackground(imageId)
+    const result = await addBackground(imageId)
+    if (!result.ok) {
+      setError(`Ajout du fond: ${result.error}`)
+      return
+    }
     await fetchBackgrounds()
     setShowImagePicker(false)
   }
@@ -68,24 +85,36 @@ export function PostcardBackgroundManager({ isMobile }: Props) {
     const ok = await deleteImage(img.id)
     if (ok) {
       setImages((prev) => prev.filter((i) => i.id !== img.id))
+    } else {
+      setError("Suppression de l'image impossible")
     }
   }
 
   const handleToggleActive = async (bg: PostcardBackground) => {
-    await updateBackground(bg.id, { active: !bg.active })
-    await fetchBackgrounds()
+    const result = await updateBackground(bg.id, { active: !bg.active })
+    if (!result.ok) {
+      setError(`Mise à jour: ${result.error}`)
+      return
+    }
+    setBackgrounds((prev) => prev.map((b) => (b.id === bg.id ? result.data : b)))
   }
 
   const handleUpdateLabel = async (bg: PostcardBackground, label: string) => {
-    await updateBackground(bg.id, { label })
-    setBackgrounds((prev) =>
-      prev.map((b) => (b.id === bg.id ? { ...b, label } : b))
-    )
+    const result = await updateBackground(bg.id, { label })
+    if (!result.ok) {
+      setError(`Mise à jour: ${result.error}`)
+      return
+    }
+    setBackgrounds((prev) => prev.map((b) => (b.id === bg.id ? result.data : b)))
   }
 
   const handleDelete = async (bg: PostcardBackground) => {
     if (!confirm('Supprimer ce fond ?')) return
-    await deleteBackground(bg.id)
+    const result = await deleteBackground(bg.id)
+    if (!result.ok) {
+      setError(`Suppression: ${result.error}`)
+      return
+    }
     await fetchBackgrounds()
   }
 

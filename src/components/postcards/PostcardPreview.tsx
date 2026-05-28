@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import { getPostcardPreview, type PostcardSubmission } from '../../api/postcardApi'
+import type { Role } from '../../data/troupes'
 import * as pdfjsLib from 'pdfjs-dist'
 import workerUrl from 'pdfjs-dist/build/pdf.worker.mjs?url'
 
@@ -56,37 +57,42 @@ export function PostcardPreview({
       setLoading(true)
       setError(false)
 
+      // role typed as string here because callers (wizard) hold raw form state;
+      // the cast is safe — preview is only reached after the role select is set.
       const data: PostcardSubmission = {
         background_id: backgroundId,
         message,
-        role,
+        role: role as Role,
         name: name.trim(),
         troupe: troupe || undefined,
         patrouille: patrouille || undefined,
       }
 
       try {
-        const blob = await getPostcardPreview(data)
+        const result = await getPostcardPreview(data)
         if (cancelled) return
 
-        if (blob) {
-          const dataUrl = await renderPdfToImage(blob)
+        if (result.ok) {
+          const dataUrl = await renderPdfToImage(result.data)
           if (cancelled) return
-
           setImageUrl(dataUrl)
         } else {
           setError(true)
         }
       } catch (e) {
-        console.error('PostcardPreview error:', e)
+        console.error('PostcardPreview render error:', e)
         if (!cancelled) setError(true)
       }
       if (!cancelled) setLoading(false)
     }
 
-    fetchPreview()
+    // Debounce: every keystroke triggers this effect; without a wait the
+    // server re-renders a PDF per character and burns the rate limiter.
+    const timer = setTimeout(fetchPreview, 500)
+
     return () => {
       cancelled = true
+      clearTimeout(timer)
     }
   }, [backgroundId, message, role, name, troupe, patrouille, renderPdfToImage])
 

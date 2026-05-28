@@ -7,7 +7,15 @@ use DB;
 class PostcardController
 {
     private const MAX_MESSAGE_LENGTH = 2000;
+    // Raw-HTML cap distinct from MAX_MESSAGE_LENGTH (visible text): markup
+    // overhead (nested <ul><li>…) can balloon stored bytes well beyond the
+    // visible-character budget. TEXT column holds 64 KB; cap well below.
+    private const MAX_HTML_LENGTH = 16000;
     private const ALLOWED_TAGS = '<p><strong><em><ul><ol><li><blockquote><br>';
+
+    // Noto Color Emoji on jsdelivr, pinned. If reliability becomes an issue,
+    // mirror just the emojis actually used (SELECT DISTINCT … FROM postcards).
+    private const NOTO_BASE = 'https://cdn.jsdelivr.net/gh/googlefonts/noto-emoji@v2.042/';
 
     private const VALID_ROLES = [
         'Louveteau', 'Louvette',
@@ -16,9 +24,6 @@ class PostcardController
         'Routier', 'Routière',
     ];
 
-    /**
-     * List backgrounds (optionally active-only)
-     */
     public function listBackgrounds(bool $activeOnly = false): array
     {
         $sql = "SELECT pb.*, i.filename, i.mime_type
@@ -46,9 +51,6 @@ class PostcardController
         }, $rows);
     }
 
-    /**
-     * Add a new background
-     */
     public function addBackground(int $imageId, ?string $label): array
     {
         $image = DB::queryFirstRow("SELECT id FROM images WHERE id = %i", $imageId);
@@ -81,9 +83,6 @@ class PostcardController
         ];
     }
 
-    /**
-     * Update a background
-     */
     public function updateBackground(int $id, array $data): ?array
     {
         $existing = DB::queryFirstRow("SELECT id FROM postcard_backgrounds WHERE id = %i", $id);
@@ -122,9 +121,6 @@ class PostcardController
         ];
     }
 
-    /**
-     * Delete a background
-     */
     public function deleteBackground(int $id): bool
     {
         $existing = DB::queryFirstRow("SELECT id FROM postcard_backgrounds WHERE id = %i", $id);
@@ -142,16 +138,17 @@ class PostcardController
      */
     private function sanitizeHtml(string $html): string
     {
-        // First strip disallowed tags
         $clean = strip_tags($html, self::ALLOWED_TAGS);
 
-        // Remove all attributes from remaining tags (e.g. onerror, style, class)
-        return preg_replace('/<(\w+)\s+[^>]*>/', '<$1>', $clean);
+        // Strip attributes (onerror, style, class, …) from the surviving tags.
+        $stripped = preg_replace('/<(\w+)\s+[^>]*>/', '<$1>', $clean);
+        if ($stripped === null) {
+            error_log('sanitizeHtml: preg_replace failed: ' . preg_last_error_msg());
+            throw new \RuntimeException('Le message contient du contenu non supporté');
+        }
+        return $stripped;
     }
 
-    /**
-     * Submit a postcard (public)
-     */
     public function submitPostcard(array $data): array
     {
         $backgroundId = $data['background_id'] ?? null;
@@ -177,6 +174,11 @@ class PostcardController
             throw new \InvalidArgumentException('Le message est requis');
         }
 
+        if (mb_strlen($message) > self::MAX_HTML_LENGTH) {
+            throw new \InvalidArgumentException('Le message est trop long');
+        }
+
+        // Visible text length cap (markup excluded).
         if (mb_strlen(strip_tags($message)) > self::MAX_MESSAGE_LENGTH) {
             throw new \InvalidArgumentException('Le message est trop long');
         }
@@ -201,9 +203,6 @@ class PostcardController
         return ['id' => DB::insertId(), 'success' => true];
     }
 
-    /**
-     * List postcards (admin)
-     */
     public function listPostcards(?string $from, ?string $to, ?int $backgroundId): array
     {
         $where = [];
@@ -254,9 +253,6 @@ class PostcardController
         }, $rows);
     }
 
-    /**
-     * Get single postcard
-     */
     public function getPostcard(int $id): ?array
     {
         $row = DB::queryFirstRow(
@@ -288,9 +284,6 @@ class PostcardController
         ];
     }
 
-    /**
-     * Delete a postcard
-     */
     public function deletePostcard(int $id): bool
     {
         $existing = DB::queryFirstRow("SELECT id FROM postcards WHERE id = %i", $id);
@@ -303,46 +296,85 @@ class PostcardController
     }
 
     /**
-     * Convert emoji characters to Twemoji <img> tags
+     * Replace emoji in $text with <img> tags pointing at Noto Color Emoji PNGs.
+     *
+     * Matches emoji as semantic units: ZWJ sequences (👨‍👩‍👧), skin-tone
+     * modifiers (👋🏽), keycaps (1️⃣) and country flags (🇨🇭) each become a
+     * single <img>, not one per codepoint. Falls back to leaving the
+     * original text in place if the regex engine fails.
      */
     private function emojisToImages(string $text): string
     {
-        // Match emoji characters and convert to Twemoji PNG URLs
-        return preg_replace_callback(
-            '/(?:\x{200D}[\x{2600}-\x{27BF}\x{FE0F}\x{1F000}-\x{1FFFF}])+|[\x{2600}-\x{27BF}][\x{FE0F}]?|[\x{1F000}-\x{1FFFF}][\x{FE0F}]?|[\x{FE00}-\x{FE0F}]/u',
-            function ($match) {
-                $emoji = $match[0];
-                // Remove variation selectors for the filename
-                $clean = preg_replace('/\x{FE0F}/u', '', $emoji);
-                // Convert each codepoint to hex
-                $codepoints = [];
-                $len = mb_strlen($clean, 'UTF-8');
-                for ($i = 0; $i < $len; $i++) {
-                    $char = mb_substr($clean, $i, 1, 'UTF-8');
-                    $cp = mb_ord($char, 'UTF-8');
-                    if ($cp !== 0x200D && $cp >= 0x100) {
-                        $codepoints[] = dechex($cp);
-                    }
-                }
-                if (empty($codepoints)) {
-                    return $emoji;
-                }
-                $filename = implode('-', $codepoints);
-                $url = "https://cdn.jsdelivr.net/gh/twitter/twemoji@latest/assets/72x72/{$filename}.png";
-                return '<img src="' . $url . '" style="vertical-align:middle; width:3.5mm; height:3.5mm;" />';
-            },
-            $text
-        );
+        $pattern = '/
+            [0-9#*]\x{FE0F}?\x{20E3}                              # keycap (digit/#/* + optional VS + enclosing keycap)
+            | [\x{1F1E6}-\x{1F1FF}]{2}                            # country flag (two regional indicators)
+            | \p{Extended_Pictographic}
+              (?:\x{FE0F}|[\x{1F3FB}-\x{1F3FF}])?                 # optional emoji-VS or skin-tone modifier
+              (?:\x{200D}                                         # ZWJ sequence: joined emoji
+                \p{Extended_Pictographic}
+                (?:\x{FE0F}|[\x{1F3FB}-\x{1F3FF}])?
+              )*
+        /ux';
+
+        $result = preg_replace_callback($pattern, function ($match) {
+            $url = $this->emojiUrl($match[0]);
+            if ($url === null) {
+                return $match[0];
+            }
+            return '<img src="' . $url . '" style="vertical-align:middle; width:3.5mm; height:3.5mm;" />';
+        }, $text);
+
+        if ($result === null) {
+            error_log('emojisToImages: preg_replace_callback failed: ' . preg_last_error_msg());
+            return $text;
+        }
+        return $result;
+    }
+
+    private function emojiUrl(string $emoji): ?string
+    {
+        $codepoints = [];
+        $len = mb_strlen($emoji, 'UTF-8');
+        for ($i = 0; $i < $len; $i++) {
+            $cp = mb_ord(mb_substr($emoji, $i, 1, 'UTF-8'), 'UTF-8');
+            // Noto filenames omit the U+FE0F variation selector.
+            if ($cp !== 0xFE0F) {
+                $codepoints[] = $cp;
+            }
+        }
+        if (empty($codepoints)) {
+            return null;
+        }
+
+        // Country flag: two regional indicators map to ISO 3166 letter pair,
+        // stored under third_party/region-flags rather than the main set.
+        if (count($codepoints) === 2
+            && $codepoints[0] >= 0x1F1E6 && $codepoints[0] <= 0x1F1FF
+            && $codepoints[1] >= 0x1F1E6 && $codepoints[1] <= 0x1F1FF
+        ) {
+            $code = chr($codepoints[0] - 0x1F1E6 + ord('A'))
+                  . chr($codepoints[1] - 0x1F1E6 + ord('A'));
+            return self::NOTO_BASE . 'third_party/region-flags/png/' . $code . '.png';
+        }
+
+        $name = implode('_', array_map('dechex', $codepoints));
+        return self::NOTO_BASE . 'png/128/emoji_u' . $name . '.png';
     }
 
     private function getRandomStamp(): ?string
     {
+        // In prod the build script (scripts/build.sh) copies stamps from
+        // public/assets/Stamps/ to dist/api/stamps/. Local PHP runs against
+        // the source tree won't have this dir — log so stampless PDFs are
+        // at least diagnosable.
         $stampDir = __DIR__ . '/../stamps/';
         if (!is_dir($stampDir)) {
+            error_log('getRandomStamp: directory missing: ' . $stampDir);
             return null;
         }
         $stamps = glob($stampDir . '*.png');
         if (empty($stamps)) {
+            error_log('getRandomStamp: no PNGs found in ' . $stampDir);
             return null;
         }
         return $stamps[array_rand($stamps)];
@@ -390,9 +422,7 @@ class PostcardController
             </div>';
     }
 
-    /**
-     * Preview a single postcard as PDF (no save)
-     */
+    // A6 landscape (mm): 148 wide × 105 tall.
     private function createMpdf(): \Mpdf\Mpdf
     {
         return new \Mpdf\Mpdf([
@@ -407,6 +437,23 @@ class PostcardController
         ]);
     }
 
+    /**
+     * Render mPDF and return the PDF bytes. Logs the full failure server-side
+     * but throws a clean message — mPDF exceptions can leak temp paths and
+     * library internals into the HTTP response otherwise.
+     */
+    private function renderPdf(callable $build): string
+    {
+        try {
+            $mpdf = $this->createMpdf();
+            $build($mpdf);
+            return $mpdf->Output('', \Mpdf\Output\Destination::STRING_RETURN);
+        } catch (\Throwable $e) {
+            error_log('mPDF failure: ' . $e::class . ': ' . $e->getMessage() . "\n" . $e->getTraceAsString());
+            throw new \RuntimeException('Erreur lors de la génération du PDF');
+        }
+    }
+
     public function previewPdf(array $data): string
     {
         $postcard = [
@@ -417,15 +464,11 @@ class PostcardController
             'patrouille' => $data['patrouille'] ?? null,
         ];
 
-        $mpdf = $this->createMpdf();
-        $mpdf->WriteHTML($this->renderPostcardHtml($postcard));
-
-        return $mpdf->Output('', \Mpdf\Output\Destination::STRING_RETURN);
+        return $this->renderPdf(function (\Mpdf\Mpdf $mpdf) use ($postcard) {
+            $mpdf->WriteHTML($this->renderPostcardHtml($postcard));
+        });
     }
 
-    /**
-     * Export postcards as PDF (A6 landscape, back side only)
-     */
     public function exportPdf(int $backgroundId, ?string $from, ?string $to): string
     {
         $postcards = $this->listPostcards($from, $to, $backgroundId);
@@ -434,15 +477,13 @@ class PostcardController
             throw new \InvalidArgumentException('Aucune carte postale à exporter');
         }
 
-        $mpdf = $this->createMpdf();
-
-        foreach ($postcards as $i => $postcard) {
-            if ($i > 0) {
-                $mpdf->AddPage();
+        return $this->renderPdf(function (\Mpdf\Mpdf $mpdf) use ($postcards) {
+            foreach ($postcards as $i => $postcard) {
+                if ($i > 0) {
+                    $mpdf->AddPage();
+                }
+                $mpdf->WriteHTML($this->renderPostcardHtml($postcard));
             }
-            $mpdf->WriteHTML($this->renderPostcardHtml($postcard));
-        }
-
-        return $mpdf->Output('', \Mpdf\Output\Destination::STRING_RETURN);
+        });
     }
 }

@@ -64,8 +64,7 @@ export async function compressImage(file: File): Promise<File> {
 
     img.onerror = () => {
       URL.revokeObjectURL(url)
-      // Can't process - return original
-      resolve(file)
+      reject(new Error('Image invalide ou corrompue'))
     }
 
     img.src = url
@@ -73,7 +72,7 @@ export async function compressImage(file: File): Promise<File> {
 }
 
 function checkNeedsResize(file: File): Promise<boolean> {
-  return new Promise((resolve) => {
+  return new Promise((resolve, reject) => {
     const img = new Image()
     const url = URL.createObjectURL(file)
     img.onload = () => {
@@ -82,7 +81,7 @@ function checkNeedsResize(file: File): Promise<boolean> {
     }
     img.onerror = () => {
       URL.revokeObjectURL(url)
-      resolve(false)
+      reject(new Error('Image invalide ou corrompue'))
     }
     img.src = url
   })

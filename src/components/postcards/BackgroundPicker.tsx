@@ -11,8 +11,8 @@ export function BackgroundPicker({ selectedId, onSelect }: Props) {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    getPostcardBackgrounds().then((bgs) => {
-      setBackgrounds(bgs)
+    getPostcardBackgrounds().then((result) => {
+      if (result.ok) setBackgrounds(result.data)
       setLoading(false)
     })
   }, [])

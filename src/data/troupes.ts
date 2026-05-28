@@ -14,7 +14,9 @@ export const ROLES = [
   'Éclaireur', 'Éclaireuse',
   'Pionnier', 'Cordée',
   'Routier', 'Routière',
-]
+] as const
+
+export type Role = typeof ROLES[number]
 
 export const TROUPES: TroupeInfo[] = [
   // --- Meutes (Louveteaux) ---

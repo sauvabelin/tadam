@@ -1,12 +1,11 @@
+import type { Role } from '../data/troupes'
+
 const API_BASE = import.meta.env.VITE_API_URL || '/api'
 const AUTH_STORAGE_KEY = 'tadam-admin-token'
 
 function getAuthHeaders(): Record<string, string> {
   const token = sessionStorage.getItem(AUTH_STORAGE_KEY)
-  if (token) {
-    return { Authorization: `Bearer ${token}` }
-  }
-  return {}
+  return token ? { Authorization: `Bearer ${token}` } : {}
 }
 
 export interface PostcardBackground {
@@ -25,7 +24,7 @@ export interface Postcard {
   background_label: string | null
   background_image_url: string | null
   message: string
-  role: string
+  role: Role
   name: string
   troupe: string | null
   patrouille: string | null
@@ -35,148 +34,132 @@ export interface Postcard {
 export interface PostcardSubmission {
   background_id: number
   message: string
-  role: string
+  role: Role
   name: string
   troupe?: string
   patrouille?: string
 }
 
-// ============================================
+export type Result<T> =
+  | { ok: true; data: T }
+  | { ok: false; error: string; status: number }
+
+interface JsonRequest extends Omit<RequestInit, 'body'> {
+  body?: unknown
+}
+
+async function apiRequest(path: string, init: JsonRequest): Promise<Response | Result<never>> {
+  const { body, headers, ...rest } = init
+  const hasBody = body !== undefined
+  try {
+    return await fetch(`${API_BASE}${path}`, {
+      ...rest,
+      headers: {
+        ...(hasBody ? { 'Content-Type': 'application/json' } : {}),
+        ...getAuthHeaders(),
+        ...headers,
+      },
+      body: hasBody ? JSON.stringify(body) : undefined,
+    })
+  } catch (err) {
+    console.error('postcardApi network error', path, err)
+    return { ok: false, error: 'Erreur de connexion', status: 0 }
+  }
+}
+
+async function extractError(response: Response): Promise<string> {
+  try {
+    const payload = await response.clone().json()
+    if (payload?.error) return String(payload.error)
+  } catch {
+    // not JSON; fall through
+  }
+  return `HTTP ${response.status}`
+}
+
+async function apiJson<T>(path: string, init: JsonRequest = {}): Promise<Result<T>> {
+  const response = await apiRequest(path, init)
+  if (!(response instanceof Response)) return response
+
+  if (!response.ok) {
+    const error = await extractError(response)
+    console.error('postcardApi', path, response.status, error)
+    return { ok: false, error, status: response.status }
+  }
+
+  if (response.status === 204) {
+    return { ok: true, data: undefined as T }
+  }
+
+  return { ok: true, data: (await response.json()) as T }
+}
+
+async function apiBlob(path: string, init: JsonRequest = {}): Promise<Result<Blob>> {
+  const response = await apiRequest(path, init)
+  if (!(response instanceof Response)) return response
+
+  if (!response.ok) {
+    const error = await extractError(response)
+    console.error('postcardApi', path, response.status, error)
+    return { ok: false, error, status: response.status }
+  }
+
+  return { ok: true, data: await response.blob() }
+}
+
 // PUBLIC
-// ============================================
 
-export async function getPostcardBackgrounds(): Promise<PostcardBackground[]> {
-  try {
-    const response = await fetch(`${API_BASE}/postcards/backgrounds`)
-    if (!response.ok) return []
-    return await response.json()
-  } catch {
-    return []
-  }
+export function getPostcardBackgrounds(): Promise<Result<PostcardBackground[]>> {
+  return apiJson('/postcards/backgrounds')
 }
 
-export async function submitPostcard(data: PostcardSubmission): Promise<{ success: boolean; error?: string }> {
-  try {
-    const response = await fetch(`${API_BASE}/postcards`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(data),
-    })
-    const result = await response.json()
-    if (!response.ok) {
-      return { success: false, error: result.error || 'Erreur' }
-    }
-    return { success: true }
-  } catch {
-    return { success: false, error: 'Erreur de connexion' }
-  }
+export function submitPostcard(data: PostcardSubmission): Promise<Result<{ id: number; success: true }>> {
+  return apiJson('/postcards', { method: 'POST', body: data })
 }
 
-export async function getPostcardPreview(data: PostcardSubmission): Promise<Blob | null> {
-  try {
-    const response = await fetch(`${API_BASE}/postcards/preview`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(data),
-    })
-    if (!response.ok) return null
-    return await response.blob()
-  } catch {
-    return null
-  }
+export function getPostcardPreview(data: PostcardSubmission): Promise<Result<Blob>> {
+  return apiBlob('/postcards/preview', { method: 'POST', body: data })
 }
 
-// ============================================
 // ADMIN
-// ============================================
 
-export async function listAllBackgrounds(): Promise<PostcardBackground[]> {
-  try {
-    const response = await fetch(`${API_BASE}/postcards/backgrounds/all`, {
-      headers: getAuthHeaders(),
-    })
-    if (!response.ok) return []
-    return await response.json()
-  } catch {
-    return []
-  }
+export function listAllBackgrounds(): Promise<Result<PostcardBackground[]>> {
+  return apiJson('/postcards/backgrounds/all')
 }
 
-export async function addBackground(imageId: number, label?: string): Promise<PostcardBackground | null> {
-  try {
-    const response = await fetch(`${API_BASE}/postcards/backgrounds`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
-      body: JSON.stringify({ image_id: imageId, label: label || null }),
-    })
-    if (!response.ok) return null
-    return await response.json()
-  } catch {
-    return null
-  }
+export function addBackground(imageId: number, label?: string): Promise<Result<PostcardBackground>> {
+  return apiJson('/postcards/backgrounds', {
+    method: 'POST',
+    body: { image_id: imageId, label: label || null },
+  })
 }
 
-export async function updateBackground(
+export function updateBackground(
   id: number,
   data: { label?: string; active?: boolean; sort_order?: number }
-): Promise<PostcardBackground | null> {
-  try {
-    const response = await fetch(`${API_BASE}/postcards/backgrounds/${id}`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
-      body: JSON.stringify(data),
-    })
-    if (!response.ok) return null
-    return await response.json()
-  } catch {
-    return null
-  }
+): Promise<Result<PostcardBackground>> {
+  return apiJson(`/postcards/backgrounds/${id}`, { method: 'POST', body: data })
 }
 
-export async function deleteBackground(id: number): Promise<boolean> {
-  try {
-    const response = await fetch(`${API_BASE}/postcards/backgrounds/${id}`, {
-      method: 'DELETE',
-      headers: getAuthHeaders(),
-    })
-    return response.ok
-  } catch {
-    return false
-  }
+export function deleteBackground(id: number): Promise<Result<void>> {
+  return apiJson(`/postcards/backgrounds/${id}`, { method: 'DELETE' })
 }
 
-export async function listPostcards(params?: {
+export function listPostcards(params?: {
   from?: string
   to?: string
   background_id?: number
-}): Promise<Postcard[]> {
-  try {
-    const searchParams = new URLSearchParams()
-    if (params?.from) searchParams.set('from', params.from)
-    if (params?.to) searchParams.set('to', params.to)
-    if (params?.background_id) searchParams.set('background_id', String(params.background_id))
-
-    const qs = searchParams.toString()
-    const response = await fetch(`${API_BASE}/postcards${qs ? '?' + qs : ''}`, {
-      headers: getAuthHeaders(),
-    })
-    if (!response.ok) return []
-    return await response.json()
-  } catch {
-    return []
-  }
+}): Promise<Result<Postcard[]>> {
+  const sp = new URLSearchParams()
+  if (params?.from) sp.set('from', params.from)
+  if (params?.to) sp.set('to', params.to)
+  if (params?.background_id) sp.set('background_id', String(params.background_id))
+  const qs = sp.toString()
+  return apiJson(`/postcards${qs ? '?' + qs : ''}`)
 }
 
-export async function deletePostcard(id: number): Promise<boolean> {
-  try {
-    const response = await fetch(`${API_BASE}/postcards/${id}`, {
-      method: 'DELETE',
-      headers: getAuthHeaders(),
-    })
-    return response.ok
-  } catch {
-    return false
-  }
+export function deletePostcard(id: number): Promise<Result<void>> {
+  return apiJson(`/postcards/${id}`, { method: 'DELETE' })
 }
 
 export function getExportUrl(backgroundId: number, from?: string, to?: string): string {

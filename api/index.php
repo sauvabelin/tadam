@@ -89,6 +89,28 @@ function getBearerToken(): ?string
 }
 
 /**
+ * Resolve the client IP for rate-limit keying.
+ *
+ * REMOTE_ADDR is the only source we trust by default — X-Forwarded-For is
+ * client-supplied and lets a spammer bypass the limiter by rotating it. The
+ * deployed reverse proxy / load balancer should set TRUSTED_PROXY_HEADER
+ * (e.g. "X-Forwarded-For" or "CF-Connecting-IP") to authorize reading the
+ * original client IP from that header.
+ */
+function getClientIp(): string
+{
+    $trusted = getenv('TRUSTED_PROXY_HEADER');
+    if ($trusted) {
+        $key = 'HTTP_' . strtoupper(str_replace('-', '_', $trusted));
+        $value = $_SERVER[$key] ?? null;
+        if ($value) {
+            return trim(explode(',', $value)[0]);
+        }
+    }
+    return $_SERVER['REMOTE_ADDR'] ?? 'unknown';
+}
+
+/**
  * Authenticate request using database sessions
  */
 function authenticate(AuthController $authController): bool
@@ -174,9 +196,7 @@ $authController = new AuthController($config['session_expiry']);
 
 // Route: POST /auth/login - Authenticate and get token
 if ($method === 'POST' && $path === '/auth/login') {
-    $clientIp = $_SERVER['HTTP_X_FORWARDED_FOR'] ?? $_SERVER['REMOTE_ADDR'] ?? 'unknown';
-    // Take first IP if X-Forwarded-For contains multiple
-    $clientIp = trim(explode(',', $clientIp)[0]);
+    $clientIp = getClientIp();
 
     $rateLimiter = new RateLimiter(5, 300); // 5 attempts per 5 minutes
 
@@ -257,7 +277,7 @@ if ($method === 'GET' && $path === '/postcards/backgrounds') {
 
 // Route: POST /postcards/preview - Preview postcard as PDF (public)
 if ($method === 'POST' && $path === '/postcards/preview') {
-    $clientIp = trim(explode(',', $_SERVER['HTTP_X_FORWARDED_FOR'] ?? $_SERVER['REMOTE_ADDR'] ?? 'unknown')[0]);
+    $clientIp = getClientIp();
     $previewLimiter = new RateLimiter(60, 300); // 60 per 5 minutes
     if (!$previewLimiter->isAllowed('preview:' . $clientIp)) {
         errorResponse('Trop de requetes. Reessaie dans quelques minutes.', 429);
@@ -271,14 +291,19 @@ if ($method === 'POST' && $path === '/postcards/preview') {
         header('Content-Length: ' . strlen($pdfContent));
         echo $pdfContent;
         exit;
-    } catch (\Exception $e) {
-        errorResponse('Failed to generate preview: ' . $e->getMessage(), 500);
+    } catch (\InvalidArgumentException $e) {
+        errorResponse($e->getMessage(), 400);
+    } catch (\RuntimeException $e) {
+        errorResponse($e->getMessage(), 500);
+    } catch (\Throwable $e) {
+        error_log('preview unexpected error: ' . $e::class . ': ' . $e->getMessage());
+        errorResponse('Erreur lors de la génération du PDF', 500);
     }
 }
 
 // Route: POST /postcards - Submit a postcard (public)
 if ($method === 'POST' && $path === '/postcards') {
-    $clientIp = trim(explode(',', $_SERVER['HTTP_X_FORWARDED_FOR'] ?? $_SERVER['REMOTE_ADDR'] ?? 'unknown')[0]);
+    $clientIp = getClientIp();
     $submitLimiter = new RateLimiter(20, 300); // 20 per 5 minutes
     if (!$submitLimiter->isAllowed('postcard:' . $clientIp)) {
         errorResponse('Trop de soumissions. Reessaie dans quelques minutes.', 429);
@@ -611,8 +636,11 @@ if ($method === 'GET' && preg_match('#^/postcards/export/(\d+)$#', $path, $match
         exit;
     } catch (\InvalidArgumentException $e) {
         errorResponse($e->getMessage(), 400);
-    } catch (\Exception $e) {
-        errorResponse('Failed to export PDF: ' . $e->getMessage(), 500);
+    } catch (\RuntimeException $e) {
+        errorResponse($e->getMessage(), 500);
+    } catch (\Throwable $e) {
+        error_log('export unexpected error: ' . $e::class . ': ' . $e->getMessage());
+        errorResponse('Erreur lors de la génération du PDF', 500);
     }
 }
 

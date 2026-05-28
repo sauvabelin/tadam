@@ -39,7 +39,7 @@ fi
 # Install composer dependencies
 echo "Installing PHP dependencies..."
 cd dist/api
-composer install --no-dev --optimize-autoloader --no-interaction --ignore-platform-reqs
+composer install --no-dev --optimize-autoloader --no-interaction
 cd ../..
 
 # Create uploads directory structure (at root level to match URL /uploads/images/)

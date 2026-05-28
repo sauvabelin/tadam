@@ -9,7 +9,8 @@ return [
                 label VARCHAR(255) NULL,
                 sort_order INT DEFAULT 0,
                 active TINYINT(1) DEFAULT 1,
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (image_id) REFERENCES images(id) ON DELETE RESTRICT
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
         ");
 
@@ -24,7 +25,8 @@ return [
                 patrouille VARCHAR(255) NULL,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 INDEX idx_background (background_id),
-                INDEX idx_created (created_at)
+                INDEX idx_created (created_at),
+                FOREIGN KEY (background_id) REFERENCES postcard_backgrounds(id) ON DELETE CASCADE
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
         ");
     },

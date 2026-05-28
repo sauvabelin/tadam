@@ -17,6 +17,7 @@ export function PostcardSubmissionsList({ isMobile }: Props) {
   const [postcards, setPostcards] = useState<Postcard[]>([])
   const [backgrounds, setBackgrounds] = useState<PostcardBackground[]>([])
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
   const [fromDate, setFromDate] = useState('')
   const [toDate, setToDate] = useState('')
   const [backgroundFilter, setBackgroundFilter] = useState<number | ''>('')
@@ -32,8 +33,10 @@ export function PostcardSubmissionsList({ isMobile }: Props) {
       }),
       listAllBackgrounds(),
     ])
-    setPostcards(pcs)
-    setBackgrounds(bgs)
+    if (pcs.ok) setPostcards(pcs.data)
+    else setError(`Chargement: ${pcs.error}`)
+    if (bgs.ok) setBackgrounds(bgs.data)
+    else setError(`Chargement: ${bgs.error}`)
     setLoading(false)
   }
 
@@ -43,7 +46,11 @@ export function PostcardSubmissionsList({ isMobile }: Props) {
 
   const handleDelete = async (id: number) => {
     if (!confirm('Supprimer cette carte postale ?')) return
-    await deletePostcard(id)
+    const result = await deletePostcard(id)
+    if (!result.ok) {
+      setError(`Suppression: ${result.error}`)
+      return
+    }
     setPostcards((prev) => prev.filter((p) => p.id !== id))
   }
 
@@ -72,6 +79,39 @@ export function PostcardSubmissionsList({ isMobile }: Props) {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+      {error && (
+        <div
+          style={{
+            marginBottom: '0.75rem',
+            padding: '0.75rem 1rem',
+            background: '#FF6B6B',
+            border: '3px solid #2D2D2D',
+            borderRadius: '0.5rem',
+            fontSize: '0.9rem',
+            fontWeight: 600,
+            color: '#2D2D2D',
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+          }}
+        >
+          <span>{error}</span>
+          <button
+            onClick={() => setError(null)}
+            style={{
+              background: 'none',
+              border: 'none',
+              cursor: 'pointer',
+              fontWeight: 700,
+              fontSize: '1.1rem',
+              color: '#2D2D2D',
+              padding: '0 0.25rem',
+            }}
+          >
+            x
+          </button>
+        </div>
+      )}
       {/* Header */}
       <div
         style={{

@@ -3,7 +3,7 @@ import { BackgroundPicker } from './BackgroundPicker'
 import { MessageEditor } from './MessageEditor'
 import { PostcardPreview } from './PostcardPreview'
 import { submitPostcard } from '../../api/postcardApi'
-import { TROUPES } from '../../data/troupes'
+import { TROUPES, type Role } from '../../data/troupes'
 
 interface Props {
   onClose: () => void
@@ -57,21 +57,22 @@ export function PostcardWizard({ onClose, onSent }: Props) {
     setSubmitting(true)
     setError(null)
 
-    const result = await submitPostcard({
-      background_id: backgroundId,
-      message,
-      role,
-      name: name.trim(),
-      troupe: troupeLabel || undefined,
-      patrouille: patrouilleLabel || undefined,
-    })
-
-    setSubmitting(false)
-
-    if (result.success) {
-      setSuccess(true)
-    } else {
-      setError(result.error || 'Erreur lors de l\'envoi')
+    try {
+      const result = await submitPostcard({
+        background_id: backgroundId,
+        message,
+        role: role as Role,
+        name: name.trim(),
+        troupe: troupeLabel || undefined,
+        patrouille: patrouilleLabel || undefined,
+      })
+      if (result.ok) {
+        setSuccess(true)
+      } else {
+        setError(result.error)
+      }
+    } finally {
+      setSubmitting(false)
     }
   }
 
