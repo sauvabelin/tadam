@@ -20,6 +20,7 @@ const BUBBLE_LABELS: Record<BulleId, string> = {
   fantasia: 'Fantasia',
   lamifa: 'Lamifa',
   zampazzi: 'Zampazzi',
+  serigraphie: 'Concours de sérigraphie',
 }
 
 interface AdminSidebarProps {

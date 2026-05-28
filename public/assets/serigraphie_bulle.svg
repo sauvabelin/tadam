@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg
+   id="serigraphie_bulle"
+   viewBox="0 0 340 110"
+   version="1.1"
+   xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <style>
+      .bubble {
+        fill: #fff;
+        stroke: #000;
+        stroke-width: 2;
+        stroke-linejoin: round;
+      }
+      .txt {
+        fill: #000;
+        font-family: ArialNarrow-BoldItalic, 'Arial Narrow';
+        font-size: 26px;
+        font-style: italic;
+        font-weight: 700;
+        text-anchor: middle;
+      }
+    </style>
+  </defs>
+  <g>
+    <path
+       class="bubble"
+       d="M170,10
+         C242,6 318,18 326,50
+         C334,82 266,98 194,100
+         C122,102 10,82 14,50
+         C18,18 98,14 170,10Z" />
+    <text class="txt" x="170" y="54">Concours de</text>
+    <text class="txt" x="170" y="80">sérigraphie</text>
+  </g>
+</svg>

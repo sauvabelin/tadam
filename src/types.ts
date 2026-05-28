@@ -6,6 +6,7 @@ export type BulleId =
   | 'journal' | 'contact' | 'dons'
   | 'inscription' | 'bienvenue'
   | 'patatra' | 'fantasia' | 'lamifa' | 'zampazzi'
+  | 'serigraphie'
 
 // Category types for admin sidebar
 export type BubbleCategory = 'pages'
@@ -23,7 +24,8 @@ export const BUBBLE_CATEGORIES: CategoryConfig[] = [
     bubbles: [
       'informations', 'train', 'chapiteau', 'lettres', 'inspectionDesSacs',
       'hike', 'concert', 'bouffe', 'journal', 'contact', 'dons',
-      'inscription', 'bienvenue', 'patatra', 'fantasia', 'lamifa', 'zampazzi'
+      'inscription', 'bienvenue', 'patatra', 'fantasia', 'lamifa', 'zampazzi',
+      'serigraphie'
     ]
   },
 ]
@@ -52,7 +54,6 @@ export type DesktopElementConfig = {
 export const bulleOffsets: Record<string, BulleOffset> = {
   informations:      { x: 220,  y: 60,  width: 300 },
   train:             { x: 100,  y: 0,  width: 300 },
-  chapiteau:         { x: 140,  y: 550,  width: 400 },
   lettres:           { x: 120,  y: 110,  width: 300 },
   inspectionDesSacs: { x: -150,  y: 50,  width: 300 },
   hike:              { x: 30,  y: -60,  width: 220 },
@@ -61,6 +62,12 @@ export const bulleOffsets: Record<string, BulleOffset> = {
   journal:           { x: 70,  y: 50,  width: 300 },
   contact:           { x: 20,  y: -20,  width: 300 },
   dons:              { x: 0,  y: -70,  width: 300 },
+}
+
+// Chapiteau has two bulles (trailer + sérigraphie)
+export const chapiteauBulleOffsets = {
+  chapiteau:    { x: 140,  y: 550,  width: 400 },
+  serigraphie:  { x: 190,  y: 280,  width: 300 },
 }
 
 // Bienvenue has two bulles
