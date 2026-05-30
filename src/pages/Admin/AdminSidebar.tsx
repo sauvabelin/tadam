@@ -157,7 +157,7 @@ export function AdminSidebar({
             }}
           >
             {([
-              { key: 'postcardBackgrounds' as const, label: 'Fonds' },
+              { key: 'postcardBackgrounds' as const, label: 'Photos' },
               { key: 'postcardSubmissions' as const, label: 'Soumissions' },
             ]).map((item) => (
               <li key={item.key} style={{ marginBottom: '0.25rem' }}>

@@ -27,7 +27,7 @@ export function PostcardBackgroundManager({ isMobile }: Props) {
     if (result.ok) {
       setBackgrounds(result.data)
     } else {
-      setError(`Chargement des fonds: ${result.error}`)
+      setError(`Chargement des photos: ${result.error}`)
     }
     setLoading(false)
   }
@@ -61,7 +61,7 @@ export function PostcardBackgroundManager({ isMobile }: Props) {
     }
     const addResult = await addBackground(image.id)
     if (!addResult.ok) {
-      setError(`Ajout du fond: ${addResult.error}`)
+      setError(`Ajout de la photo: ${addResult.error}`)
       setUploading(false)
       return
     }
@@ -73,7 +73,7 @@ export function PostcardBackgroundManager({ isMobile }: Props) {
   const handlePickExisting = async (imageId: number) => {
     const result = await addBackground(imageId)
     if (!result.ok) {
-      setError(`Ajout du fond: ${result.error}`)
+      setError(`Ajout de la photo: ${result.error}`)
       return
     }
     await fetchBackgrounds()
@@ -109,7 +109,7 @@ export function PostcardBackgroundManager({ isMobile }: Props) {
   }
 
   const handleDelete = async (bg: PostcardBackground) => {
-    if (!confirm('Supprimer ce fond ?')) return
+    if (!confirm('Supprimer cette photo ?')) return
     const result = await deleteBackground(bg.id)
     if (!result.ok) {
       setError(`Suppression: ${result.error}`)
@@ -147,7 +147,7 @@ export function PostcardBackgroundManager({ isMobile }: Props) {
             margin: 0,
           }}
         >
-          Fonds de cartes postales
+          Photos de cartes postales
         </h1>
         <button
           onClick={handleShowImagePicker}
@@ -163,7 +163,7 @@ export function PostcardBackgroundManager({ isMobile }: Props) {
             boxShadow: '3px 3px 0px rgba(0, 0, 0, 0.15)',
           }}
         >
-          + Ajouter un fond
+          + Ajouter une photo
         </button>
       </div>
 
@@ -364,7 +364,7 @@ export function PostcardBackgroundManager({ isMobile }: Props) {
           <div style={{ textAlign: 'center', padding: '2rem', color: '#6b7280' }}>Chargement...</div>
         ) : backgrounds.length === 0 ? (
           <div style={{ textAlign: 'center', padding: '2rem', color: '#6b7280' }}>
-            Aucun fond. Ajoutez-en un avec le bouton ci-dessus.
+            Aucune photo. Ajoutez-en une avec le bouton ci-dessus.
           </div>
         ) : (
           <div
@@ -389,7 +389,7 @@ export function PostcardBackgroundManager({ isMobile }: Props) {
                 <div style={{ aspectRatio: '148 / 105', overflow: 'hidden' }}>
                   <img
                     src={bg.image_url}
-                    alt={bg.label || 'Fond'}
+                    alt={bg.label || 'Photo'}
                     style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
                   />
                 </div>

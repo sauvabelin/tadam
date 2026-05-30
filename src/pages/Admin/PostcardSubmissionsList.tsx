@@ -177,7 +177,7 @@ export function PostcardSubmissionsList({ isMobile }: Props) {
           </div>
           <div>
             <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 600, marginBottom: '0.25rem', color: '#4a4a4a' }}>
-              Fond
+              Photo
             </label>
             <select
               value={backgroundFilter}
@@ -187,7 +187,7 @@ export function PostcardSubmissionsList({ isMobile }: Props) {
               <option value="">Tous</option>
               {backgrounds.map((bg) => (
                 <option key={bg.id} value={bg.id}>
-                  {bg.label || `Fond #${bg.id}`}
+                  {bg.label || `Photo #${bg.id}`}
                 </option>
               ))}
             </select>
@@ -234,7 +234,7 @@ export function PostcardSubmissionsList({ isMobile }: Props) {
                   color: '#2D2D2D',
                 }}
               >
-                {bg.label || `Fond #${bg.id}`} ({postcards.filter((p) => p.background_id === bg.id).length})
+                {bg.label || `Photo #${bg.id}`} ({postcards.filter((p) => p.background_id === bg.id).length})
               </button>
             ))}
           </div>
