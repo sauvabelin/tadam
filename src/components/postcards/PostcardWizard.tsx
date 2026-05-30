@@ -10,7 +10,7 @@ interface Props {
   onSent: () => void
 }
 
-const STEPS = ['Fond', 'Carte postale', 'Aperçu']
+const STEPS = ['Photo', 'Texte', 'Aperçu']
 
 export function PostcardWizard({ onClose, onSent }: Props) {
   const [step, setStep] = useState(1)

@@ -379,7 +379,7 @@ export function MessageEditor({ initialContent, onChange, address, onAddressChan
            paragraph break renders as a single line there. Keeping the editor
            tight too means Enter = next line and double-Enter = a blank line in
            both — a faithful WYSIWYG. */
-        .tiptap { height: 100%; }
+        .tiptap { height: 100%; text-align: center; }
         .tiptap:focus { outline: none; }
         .tiptap p { margin: 0; }
         .tiptap ul { list-style-type: disc; padding-left: 1.2em; margin: 0; }

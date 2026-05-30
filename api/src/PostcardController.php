@@ -410,7 +410,7 @@ class PostcardController
         }
 
         return '
-            <div style="position:fixed; left:5mm; top:5mm; width:64mm; height:95mm; overflow:hidden; font-family:helvetica; font-size:12pt;">
+            <div style="position:fixed; left:5mm; top:5mm; width:64mm; height:95mm; overflow:hidden; font-family:helvetica; font-size:12pt; text-align:center;">
                 ' . $message . '
             </div>
             <div style="position:fixed; left:74mm; top:5mm; width:0.3mm; height:95mm; background-color:#969696;"></div>

@@ -46,5 +46,5 @@ export const TROUPES: TroupeInfo[] = [
   { id: 'tamaro', label: 'Tamaro' },
   // --- Routiers ---
   { id: 'clan', label: 'Le Clan' },
-  { id: 'gamaiun', label: 'Clan Gamaiun' },
+  { id: 'gamaiun', label: 'Gamaiun' },
 ]

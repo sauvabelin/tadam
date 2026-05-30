@@ -24,7 +24,7 @@ export function BackgroundPicker({ selectedId, onSelect }: Props) {
   if (loading) {
     return (
       <div style={{ textAlign: 'center', padding: '2rem', color: '#6b7280' }}>
-        Chargement des fonds...
+        Chargement des photos...
       </div>
     )
   }
@@ -32,7 +32,7 @@ export function BackgroundPicker({ selectedId, onSelect }: Props) {
   if (error) {
     return (
       <div style={{ textAlign: 'center', padding: '2rem', color: '#902212' }}>
-        Impossible de charger les fonds. Vérifie ta connexion et réessaie.
+        Impossible de charger les photos. Vérifie ta connexion et réessaie.
       </div>
     )
   }
@@ -40,7 +40,7 @@ export function BackgroundPicker({ selectedId, onSelect }: Props) {
   if (backgrounds.length === 0) {
     return (
       <div style={{ textAlign: 'center', padding: '2rem', color: '#6b7280' }}>
-        Aucun fond disponible pour le moment.
+        Aucune photo disponible pour le moment.
       </div>
     )
   }
@@ -48,7 +48,7 @@ export function BackgroundPicker({ selectedId, onSelect }: Props) {
   return (
     <div>
       <h3 style={{ margin: '0 0 1rem', fontSize: '1.1rem', fontWeight: 700, color: '#2D2D2D' }}>
-        Choisis un fond pour ta carte postale
+        Choisis une photo pour ta carte postale
       </h3>
       <div
         style={{
@@ -78,7 +78,7 @@ export function BackgroundPicker({ selectedId, onSelect }: Props) {
             <div style={{ aspectRatio: '148 / 105', overflow: 'hidden' }}>
               <img
                 src={bg.image_url}
-                alt={bg.label || 'Fond'}
+                alt={bg.label || 'Photo'}
                 style={{
                   width: '100%',
                   height: '100%',
