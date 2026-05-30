@@ -11,7 +11,6 @@ interface AddressFields {
   role: string
   name: string
   troupe: string
-  patrouille: string
 }
 
 interface Props {
@@ -21,12 +20,15 @@ interface Props {
   onAddressChange: (field: string, value: string) => void
 }
 
+// Sizes in cqw (% of card width) so the address fields scale with the card,
+// landing near the PDF's 11pt address text. Requires an ancestor with
+// container-type (the card body, set below).
 const fieldStyle: React.CSSProperties = {
   width: '100%',
-  padding: '3px 6px',
-  fontSize: '10px',
+  padding: '0.6cqw 1.2cqw',
+  fontSize: '2.4cqw',
   border: '1px solid #ccc',
-  borderRadius: '3px',
+  borderRadius: '0.5cqw',
   background: 'rgba(255, 254, 245, 0.6)',
   color: '#2D2D2D',
   fontFamily: 'inherit',
@@ -80,7 +82,6 @@ export function MessageEditor({ initialContent, onChange, address, onAddressChan
   const [isOverflow, setIsOverflow] = useState(false)
   const emojiRef = useRef<HTMLDivElement>(null)
   const messageAreaRef = useRef<HTMLDivElement>(null)
-  const selectedTroupe = TROUPES.find((t) => t.id === address.troupe) ?? null
 
   const editor = useEditor({
     extensions: [
@@ -99,7 +100,12 @@ export function MessageEditor({ initialContent, onChange, address, onAddressChan
     },
     editorProps: {
       attributes: {
-        style: 'height: 100%; padding: 10px; outline: none; font-size: 16px; line-height: 1.5; overflow-y: auto;',
+        // Sized to mirror the PDF message box (PostcardController: 64×95mm,
+        // 12pt, on a 148mm card). cqw = % of card width, so 2.86cqw ≈ 12pt and
+        // 3.38cqw padding ≈ the 5mm inset → the 74mm half yields a 64mm-wide
+        // text column matching the PDF, so on-screen wrapping/overflow predicts
+        // the print. line-height kept a touch above mPDF's so it warns early.
+        style: 'height: 100%; padding: 3.38cqw; outline: none; font-size: 2.86cqw; line-height: 1.3; overflow-y: auto;',
       },
     },
   })
@@ -129,8 +135,17 @@ export function MessageEditor({ initialContent, onChange, address, onAddressChan
         Compose ta carte postale
       </h3>
 
-      {/* Card wrapper - centered, A6 proportions */}
-      <div style={{ maxWidth: `${Math.round(360 * CARD_ASPECT)}px`, margin: '0 auto' }}>
+      {/* Card wrapper - centered. Responsive + proportion-correct: a 780px
+          desktop cap that scales down via 100% on narrower screens. True
+          physical size isn't portable (CSS has no real-DPI unit), so we don't
+          chase cm — the inner card's A6 aspect ratio keeps proportions exact on
+          every display, and the printed PDF is the true 148×105mm artifact. */}
+      <div
+        style={{
+          width: 'min(780px, 100%)',
+          margin: '0 auto',
+        }}
+      >
 
       {/* Toolbar */}
       <div
@@ -204,7 +219,7 @@ export function MessageEditor({ initialContent, onChange, address, onAddressChan
                 onClick={() => setShowEmoji(false)}
               />
               <div style={{ position: 'absolute', top: '100%', left: 0, zIndex: 11, marginTop: '4px' }}>
-                <EmojiPicker onEmojiClick={handleEmojiClick} height={350} width={300} />
+                <EmojiPicker onEmojiClick={handleEmojiClick} height={450} width="min(380px, 92vw)" />
               </div>
             </>
           )}
@@ -227,6 +242,10 @@ export function MessageEditor({ initialContent, onChange, address, onAddressChan
             aspectRatio: String(CARD_ASPECT),
             display: 'flex',
             position: 'relative',
+            // Query container so the editor text can be sized in cqw (a fraction
+            // of card width) and thus track the PDF's 12pt-on-148mm proportion
+            // at any card size.
+            containerType: 'inline-size',
           }}
         >
           {/* Left half: message area */}
@@ -261,28 +280,29 @@ export function MessageEditor({ initialContent, onChange, address, onAddressChan
             )}
           </div>
 
-          {/* Right half: address form fields */}
+          {/* Right half: address form fields. Padding/gaps in cqw so the whole
+              column scales with the card alongside the fields. */}
           <div
             style={{
               flex: '0 0 50%',
-              padding: '8px 12px',
+              padding: '1cqw 1.6cqw',
               display: 'flex',
               flexDirection: 'column',
               background: '#fefcf3',
             }}
           >
             {/* Stamp placeholder */}
-            <div style={{ alignSelf: 'flex-end', marginBottom: '8px' }}>
+            <div style={{ alignSelf: 'flex-end', marginBottom: '1cqw' }}>
               <div
                 style={{
-                  width: '36px',
-                  height: '36px',
+                  width: '5cqw',
+                  height: '5cqw',
                   border: '1.5px dashed #bbb',
-                  borderRadius: '2px',
+                  borderRadius: '0.3cqw',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  fontSize: '0.5rem',
+                  fontSize: '1.3cqw',
                   color: '#bbb',
                 }}
               >
@@ -291,7 +311,7 @@ export function MessageEditor({ initialContent, onChange, address, onAddressChan
             </div>
 
             {/* Address form fields */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', flex: 1, justifyContent: 'center' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '1cqw', flex: 1, justifyContent: 'center' }}>
               <div>
                 <select
                   value={address.role}
@@ -318,10 +338,7 @@ export function MessageEditor({ initialContent, onChange, address, onAddressChan
               <div>
                 <select
                   value={address.troupe}
-                  onChange={(e) => {
-                    onAddressChange('troupe', e.target.value)
-                    onAddressChange('patrouille', '')
-                  }}
+                  onChange={(e) => onAddressChange('troupe', e.target.value)}
                   style={fieldStyle}
                 >
                   <option value="">Unité *</option>
@@ -330,21 +347,6 @@ export function MessageEditor({ initialContent, onChange, address, onAddressChan
                   ))}
                 </select>
               </div>
-
-              {selectedTroupe && selectedTroupe.patrouilles.length > 0 && (
-                <div>
-                  <select
-                    value={address.patrouille}
-                    onChange={(e) => onAddressChange('patrouille', e.target.value)}
-                    style={fieldStyle}
-                  >
-                    <option value="">Sous-Unité (optionnel)</option>
-                    {selectedTroupe.patrouilles.map((p) => (
-                      <option key={p.id} value={p.id}>{p.label}</option>
-                    ))}
-                  </select>
-                </div>
-              )}
             </div>
           </div>
 
@@ -371,20 +373,22 @@ export function MessageEditor({ initialContent, onChange, address, onAddressChan
       </div>{/* end card wrapper */}
 
       <style>{`
-        .tiptap {
-          font-size: 16px;
-          line-height: 1.5;
-          height: 100%;
-        }
+        /* font-size / line-height / padding come from editorProps (in cqw, so
+           they track the PDF). Paragraph and list margins are 0 to match the
+           PDF: mPDF flattens block margins inside the fixed message box, so a
+           paragraph break renders as a single line there. Keeping the editor
+           tight too means Enter = next line and double-Enter = a blank line in
+           both — a faithful WYSIWYG. */
+        .tiptap { height: 100%; }
         .tiptap:focus { outline: none; }
-        .tiptap p { margin: 0.35em 0; }
-        .tiptap ul { list-style-type: disc; padding-left: 1.2em; margin: 0.35em 0; }
-        .tiptap ol { list-style-type: decimal; padding-left: 1.2em; margin: 0.35em 0; }
-        .tiptap li { margin: 0.15em 0; }
+        .tiptap p { margin: 0; }
+        .tiptap ul { list-style-type: disc; padding-left: 1.2em; margin: 0; }
+        .tiptap ol { list-style-type: decimal; padding-left: 1.2em; margin: 0; }
+        .tiptap li { margin: 0; }
         .tiptap blockquote {
           border-left: 2px solid #902212;
           padding-left: 0.75em;
-          margin: 0.35em 0;
+          margin: 0;
           color: #4b5563;
           font-style: italic;
         }

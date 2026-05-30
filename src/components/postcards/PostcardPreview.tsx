@@ -15,7 +15,6 @@ interface Props {
   role: string
   name: string
   troupe: string
-  patrouille: string
 }
 
 export function PostcardPreview({
@@ -25,7 +24,6 @@ export function PostcardPreview({
   role,
   name,
   troupe,
-  patrouille,
 }: Props) {
   const [flipped, setFlipped] = useState(false)
   const [imageUrl, setImageUrl] = useState<string | null>(null)
@@ -65,7 +63,6 @@ export function PostcardPreview({
         role: role as Role,
         name: name.trim(),
         troupe: troupe || undefined,
-        patrouille: patrouille || undefined,
       }
 
       try {
@@ -94,7 +91,7 @@ export function PostcardPreview({
       cancelled = true
       clearTimeout(timer)
     }
-  }, [backgroundId, message, role, name, troupe, patrouille, renderPdfToImage])
+  }, [backgroundId, message, role, name, troupe, renderPdfToImage])
 
   return (
     <div>
@@ -102,14 +99,15 @@ export function PostcardPreview({
         Aperçu de ta carte
       </h3>
 
-      {/* Card container with 3D flip — sized at A6 (148×105mm) using CSS mm
-          units so the on-screen preview matches the printed dimensions; falls
-          back to 100% width on narrower viewports. */}
+      {/* Card container with 3D flip. Responsive + proportion-correct: a 780px
+          desktop cap that scales down via 100% on narrower screens. True
+          physical size isn't portable (CSS has no real-DPI unit), so we don't
+          chase cm — the A6 aspect ratio keeps proportions exact on every
+          display, and this preview is a rendered image of the true-A6 PDF. */}
       <div
         style={{
           perspective: '1000px',
-          width: '148mm',
-          maxWidth: '100%',
+          width: 'min(780px, 100%)',
           margin: '0 auto',
         }}
       >

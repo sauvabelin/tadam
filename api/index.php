@@ -157,7 +157,9 @@ function getJsonBody(): array
         errorResponse('Invalid JSON body', 400);
     }
 
-    return $data ?: [];
+    // A valid-but-scalar body (e.g. `5` or `"x"`) would otherwise be returned
+    // against the `: array` return type and trigger a TypeError.
+    return is_array($data) ? $data : [];
 }
 
 // ============================================
@@ -270,8 +272,11 @@ if ($method === 'GET' && $path === '/postcards/backgrounds') {
     try {
         $backgrounds = $postcardController->listBackgrounds(true);
         jsonResponse($backgrounds);
-    } catch (\Exception $e) {
-        errorResponse('Failed to list backgrounds: ' . $e->getMessage(), 500);
+    } catch (\Throwable $e) {
+        // Public endpoint: log detail server-side, return a generic message so
+        // DB/internal exception text never reaches anonymous callers.
+        error_log('list backgrounds (public) failed: ' . $e->getMessage());
+        errorResponse('Erreur lors du chargement des fonds', 500);
     }
 }
 
@@ -316,8 +321,13 @@ if ($method === 'POST' && $path === '/postcards') {
         jsonResponse($result, 201);
     } catch (\InvalidArgumentException $e) {
         errorResponse($e->getMessage(), 400);
-    } catch (\Exception $e) {
-        errorResponse('Failed to submit postcard: ' . $e->getMessage(), 500);
+    } catch (\RuntimeException $e) {
+        // sanitizeHtml rejects unsupported content with a clean French message.
+        errorResponse($e->getMessage(), 400);
+    } catch (\Throwable $e) {
+        // Public endpoint: never leak raw DB/internal text to the caller.
+        error_log('submit postcard failed: ' . $e::class . ': ' . $e->getMessage());
+        errorResponse('Erreur lors de l\'enregistrement de la carte', 500);
     }
 }
 

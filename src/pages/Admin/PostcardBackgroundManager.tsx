@@ -396,9 +396,10 @@ export function PostcardBackgroundManager({ isMobile }: Props) {
                 <div style={{ padding: '0.5rem' }}>
                   <input
                     type="text"
-                    value={bg.label || ''}
+                    // Uncontrolled + persist-on-blur: avoids firing a POST on
+                    // every keystroke. key=bg.id keeps each input tied to its row.
+                    defaultValue={bg.label || ''}
                     placeholder="Label..."
-                    onChange={(e) => handleUpdateLabel(bg, e.target.value)}
                     onBlur={(e) => handleUpdateLabel(bg, e.target.value)}
                     style={{
                       width: '100%',

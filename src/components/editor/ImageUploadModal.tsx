@@ -101,7 +101,15 @@ export function ImageUploadModal({
 
       // Compress and upload file
       setIsUploading(true)
-      const compressed = await compressImage(file)
+      let compressed: File
+      try {
+        compressed = await compressImage(file)
+      } catch (err) {
+        setIsUploading(false)
+        setPreview(null)
+        setError(err instanceof Error ? err.message : "Erreur lors de la compression")
+        return
+      }
       const { data, error: uploadError } = await uploadImage(compressed, bubbleId)
       setIsUploading(false)
 

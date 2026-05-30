@@ -21,14 +21,12 @@ export function PostcardWizard({ onClose, onSent }: Props) {
   const [role, setRole] = useState('')
   const [name, setName] = useState('')
   const [troupe, setTroupe] = useState('')
-  const [patrouille, setPatrouille] = useState('')
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState(false)
 
   const selectedTroupe = TROUPES.find((t) => t.id === troupe)
   const troupeLabel = selectedTroupe?.label || ''
-  const patrouilleLabel = selectedTroupe?.patrouilles.find((p) => p.id === patrouille)?.label || ''
 
   const canNext = () => {
     if (step === 1) return backgroundId !== null
@@ -64,7 +62,6 @@ export function PostcardWizard({ onClose, onSent }: Props) {
         role: role as Role,
         name: name.trim(),
         troupe: troupeLabel || undefined,
-        patrouille: patrouilleLabel || undefined,
       })
       if (result.ok) {
         setSuccess(true)
@@ -80,7 +77,6 @@ export function PostcardWizard({ onClose, onSent }: Props) {
     if (field === 'role') setRole(value)
     if (field === 'name') setName(value)
     if (field === 'troupe') setTroupe(value)
-    if (field === 'patrouille') setPatrouille(value)
   }
 
   if (success) {
@@ -195,7 +191,7 @@ export function PostcardWizard({ onClose, onSent }: Props) {
           <MessageEditor
             initialContent={message}
             onChange={setMessage}
-            address={{ role, name, troupe, patrouille }}
+            address={{ role, name, troupe }}
             onAddressChange={handleFieldChange}
           />
         )}
@@ -207,7 +203,6 @@ export function PostcardWizard({ onClose, onSent }: Props) {
             role={role}
             name={name}
             troupe={troupeLabel}
-            patrouille={patrouilleLabel}
           />
         )}
       </div>

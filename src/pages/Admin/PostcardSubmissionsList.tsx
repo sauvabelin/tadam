@@ -23,25 +23,29 @@ export function PostcardSubmissionsList({ isMobile }: Props) {
   const [backgroundFilter, setBackgroundFilter] = useState<number | ''>('')
   const [expandedId, setExpandedId] = useState<number | null>(null)
 
-  const fetchData = async () => {
+  useEffect(() => {
+    // Guard against out-of-order resolution: rapid filter changes fire
+    // overlapping fetches, and a stale one must not overwrite fresher data.
+    let cancelled = false
     setLoading(true)
-    const [pcs, bgs] = await Promise.all([
+    Promise.all([
       listPostcards({
         from: fromDate || undefined,
         to: toDate || undefined,
         background_id: backgroundFilter || undefined,
       }),
       listAllBackgrounds(),
-    ])
-    if (pcs.ok) setPostcards(pcs.data)
-    else setError(`Chargement: ${pcs.error}`)
-    if (bgs.ok) setBackgrounds(bgs.data)
-    else setError(`Chargement: ${bgs.error}`)
-    setLoading(false)
-  }
-
-  useEffect(() => {
-    fetchData()
+    ]).then(([pcs, bgs]) => {
+      if (cancelled) return
+      if (pcs.ok) setPostcards(pcs.data)
+      else setError(`Chargement: ${pcs.error}`)
+      if (bgs.ok) setBackgrounds(bgs.data)
+      else setError(`Chargement: ${bgs.error}`)
+      setLoading(false)
+    })
+    return () => {
+      cancelled = true
+    }
   }, [fromDate, toDate, backgroundFilter])
 
   const handleDelete = async (id: number) => {
@@ -337,7 +341,6 @@ export function PostcardSubmissionsList({ isMobile }: Props) {
                       role={pc.role}
                       name={pc.name}
                       troupe={pc.troupe || ''}
-                      patrouille={pc.patrouille || ''}
                     />
                   </div>
                 )}

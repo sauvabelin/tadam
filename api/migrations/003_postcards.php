@@ -22,7 +22,6 @@ return [
                 role VARCHAR(50) NOT NULL,
                 name VARCHAR(255) NOT NULL,
                 troupe VARCHAR(255) NULL,
-                patrouille VARCHAR(255) NULL,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 INDEX idx_background (background_id),
                 INDEX idx_created (created_at),

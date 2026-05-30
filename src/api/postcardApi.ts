@@ -27,7 +27,6 @@ export interface Postcard {
   role: Role
   name: string
   troupe: string | null
-  patrouille: string | null
   created_at: string
 }
 
@@ -37,7 +36,6 @@ export interface PostcardSubmission {
   role: Role
   name: string
   troupe?: string
-  patrouille?: string
 }
 
 export type Result<T> =
@@ -69,7 +67,7 @@ async function apiRequest(path: string, init: JsonRequest): Promise<Response | R
 
 async function extractError(response: Response): Promise<string> {
   try {
-    const payload = await response.clone().json()
+    const payload = await response.json()
     if (payload?.error) return String(payload.error)
   } catch {
     // not JSON; fall through

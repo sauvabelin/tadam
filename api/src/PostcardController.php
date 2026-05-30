@@ -18,6 +18,8 @@ class PostcardController
     // mirror just the emojis actually used (SELECT DISTINCT … FROM postcards).
     private const NOTO_BASE = 'https://cdn.jsdelivr.net/gh/googlefonts/noto-emoji@v2.042/';
 
+    // Authoritative role whitelist. Must stay in sync with ROLES in
+    // src/data/troupes.ts (the frontend picker); this is the runtime gate.
     private const VALID_ROLES = [
         'Louveteau', 'Louvette',
         'Éclaireur', 'Éclaireuse',
@@ -157,7 +159,6 @@ class PostcardController
         $role = $data['role'] ?? '';
         $name = trim($data['name'] ?? '');
         $troupe = $data['troupe'] ?? null;
-        $patrouille = $data['patrouille'] ?? null;
 
         if (!$backgroundId) {
             throw new \InvalidArgumentException('Un fond est requis');
@@ -198,7 +199,6 @@ class PostcardController
             'role' => $role,
             'name' => $name,
             'troupe' => $troupe ?: null,
-            'patrouille' => $patrouille ?: null,
         ]);
 
         return ['id' => DB::insertId(), 'success' => true];
@@ -248,7 +248,6 @@ class PostcardController
                 'role' => $row['role'],
                 'name' => $row['name'],
                 'troupe' => $row['troupe'],
-                'patrouille' => $row['patrouille'],
                 'created_at' => $row['created_at'],
             ];
         }, $rows);
@@ -280,7 +279,6 @@ class PostcardController
             'role' => $row['role'],
             'name' => $row['name'],
             'troupe' => $row['troupe'],
-            'patrouille' => $row['patrouille'],
             'created_at' => $row['created_at'],
         ];
     }
@@ -313,7 +311,7 @@ class PostcardController
             if ($url === null) {
                 return $match[0];
             }
-            return '<img src="' . $url . '" style="vertical-align:middle; width:3.5mm; height:3.5mm;" />';
+            return '<img src="' . $url . '" style="vertical-align:middle; width:4.5mm; height:4.5mm;" />';
         }, $text);
 
         if ($result === null) {
@@ -374,33 +372,41 @@ class PostcardController
 
     private function renderPostcardHtml(array $postcard): string
     {
-        $message = $this->emojisToImages($postcard['message']);
+        // mPDF collapses empty <p></p> blocks, dropping the blank lines a user
+        // adds in the editor (double-Enter). Give each a non-breaking space so
+        // the blank line survives into the PDF, matching the on-screen editor.
+        $message = $postcard['message'];
+        $withBlanks = preg_replace('#<p>\s*</p>#u', '<p>&#160;</p>', $message);
+        if ($withBlanks !== null) {
+            $message = $withBlanks;
+        }
+        $message = $this->emojisToImages($message);
         $role = htmlspecialchars($postcard['role'], ENT_QUOTES, 'UTF-8');
         $name = htmlspecialchars($postcard['name'], ENT_QUOTES, 'UTF-8');
 
         $addressLines = '<div style="font-weight:bold;">' . $role . ' ' . $name . '</div>';
-        $secondLine = [];
         if ($postcard['troupe']) {
-            $secondLine[] = htmlspecialchars($postcard['troupe'], ENT_QUOTES, 'UTF-8');
-        }
-        if ($postcard['patrouille']) {
-            $secondLine[] = htmlspecialchars($postcard['patrouille'], ENT_QUOTES, 'UTF-8');
-        }
-        if (!empty($secondLine)) {
-            $addressLines .= '<div style="margin-top:2mm;">' . implode(' - ', $secondLine) . '</div>';
+            $troupeHtml = htmlspecialchars($postcard['troupe'], ENT_QUOTES, 'UTF-8');
+            $addressLines .= '<div style="margin-top:2mm;">' . $troupeHtml . '</div>';
         }
 
-        // Stamp: random image with perforated border
+        // Stamp: random image with perforated border. Embedded as a base64
+        // data URI rather than a file path so mPDF needs no `file://` stream
+        // wrapper (see createMpdf — the wrapper is disabled for safety).
         $stampHtml = '';
         $stampPath = $this->getRandomStamp();
         if ($stampPath) {
-            $stampHtml = '
-            <div style="position:fixed; left:119mm; top:7mm; width:19mm; height:19mm;
-                        border:0.5mm solid #2D2D2D; padding:1.2mm; background:#FFFEF5;">
-                <div style="border:0.3mm dashed #b4b4b4; width:100%; height:100%; overflow:hidden;">
-                    <img src="' . $stampPath . '" style="width:100%; height:100%;" />
-                </div>
-            </div>';
+            $stampData = @file_get_contents($stampPath);
+            if ($stampData !== false) {
+                $stampSrc = 'data:image/png;base64,' . base64_encode($stampData);
+                $stampHtml = '
+                <div style="position:fixed; left:119mm; top:7mm; width:19mm; height:19mm;
+                            border:0.5mm solid #2D2D2D; padding:1.2mm; background:#FFFEF5;">
+                    <div style="border:0.3mm dashed #b4b4b4; width:100%; height:100%; overflow:hidden;">
+                        <img src="' . $stampSrc . '" style="width:100%; height:100%;" />
+                    </div>
+                </div>';
+            }
         }
 
         return '
@@ -426,6 +432,10 @@ class PostcardController
             'margin_bottom' => 0,
             'default_font' => 'helvetica',
             'tempDir' => '/tmp/mpdf',
+            // Drop the default `file` wrapper so user-influenced HTML can never
+            // make mPDF read local files. Emoji images come over https; the
+            // stamp is embedded as a data URI (see renderPostcardHtml).
+            'whitelistStreamWrappers' => ['http', 'https'],
         ]);
     }
 
@@ -448,12 +458,21 @@ class PostcardController
 
     public function previewPdf(array $data): string
     {
+        $message = $this->sanitizeHtml($data['message'] ?? '');
+
+        // Same length guards as submitPostcard — preview is a public endpoint
+        // and an oversized message drives the same mPDF rendering cost.
+        if (mb_strlen($message) > self::MAX_HTML_LENGTH
+            || mb_strlen(strip_tags($message)) > self::MAX_MESSAGE_LENGTH
+        ) {
+            throw new \InvalidArgumentException('Le message est trop long');
+        }
+
         $postcard = [
-            'message' => $this->sanitizeHtml($data['message'] ?? ''),
+            'message' => $message,
             'role' => $data['role'] ?? '',
             'name' => $data['name'] ?? '',
             'troupe' => $data['troupe'] ?? null,
-            'patrouille' => $data['patrouille'] ?? null,
         ];
 
         return $this->renderPdf(function (\Mpdf\Mpdf $mpdf) use ($postcard) {

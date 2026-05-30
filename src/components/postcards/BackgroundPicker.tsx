@@ -9,10 +9,14 @@ interface Props {
 export function BackgroundPicker({ selectedId, onSelect }: Props) {
   const [backgrounds, setBackgrounds] = useState<PostcardBackground[]>([])
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
     getPostcardBackgrounds().then((result) => {
       if (result.ok) setBackgrounds(result.data)
+      // A failed load must not masquerade as an empty catalog — surface it so
+      // the user knows to retry rather than thinking no backgrounds exist.
+      else setError(result.error)
       setLoading(false)
     })
   }, [])
@@ -21,6 +25,14 @@ export function BackgroundPicker({ selectedId, onSelect }: Props) {
     return (
       <div style={{ textAlign: 'center', padding: '2rem', color: '#6b7280' }}>
         Chargement des fonds...
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div style={{ textAlign: 'center', padding: '2rem', color: '#902212' }}>
+        Impossible de charger les fonds. Vérifie ta connexion et réessaie.
       </div>
     )
   }
