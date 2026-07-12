@@ -50,7 +50,7 @@ export const Train: React.FC<Props> = ({ className, style, bulleOffset }) => {
         <Bulle
           id="train"
           src="/assets/journee_des_parents_bulle.svg"
-          alt="Journee des parents"
+          alt="Journée des parents"
           offsetX={bulleOffset.x}
           offsetY={bulleOffset.y}
           width={bulleOffset.width}

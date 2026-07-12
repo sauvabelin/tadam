@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { BulleId, BUBBLE_CATEGORIES, BubbleCategory } from '../../types'
+import type { AdminSection } from './index'
 
 const BUBBLE_LABELS: Record<BulleId, string> = {
   informations: 'Informations',
@@ -23,8 +24,10 @@ const BUBBLE_LABELS: Record<BulleId, string> = {
 }
 
 interface AdminSidebarProps {
-  selectedBubble: BulleId
+  selectedBubble: BulleId | null
   onSelectBubble: (id: BulleId) => void
+  adminSection: AdminSection
+  onSetAdminSection: (section: AdminSection) => void
   onLogout: () => void
   isMobileOpen: boolean
   onMobileClose: () => void
@@ -34,6 +37,8 @@ interface AdminSidebarProps {
 export function AdminSidebar({
   selectedBubble,
   onSelectBubble,
+  adminSection,
+  onSetAdminSection,
   onLogout,
   isMobileOpen,
   onMobileClose,
@@ -46,6 +51,13 @@ export function AdminSidebar({
 
   const handleSelect = (id: BulleId) => {
     onSelectBubble(id)
+    if (isMobile) {
+      onMobileClose()
+    }
+  }
+
+  const handleSelectSection = (section: AdminSection) => {
+    onSetAdminSection(section)
     if (isMobile) {
       onMobileClose()
     }
@@ -119,10 +131,82 @@ export function AdminSidebar({
           background: '#FFFEF5',
         }}
       >
+        {/* Cartes Postales section */}
+        <div style={{ marginBottom: '0.75rem' }}>
+          <div
+            style={{
+              padding: '0.75rem 1rem',
+              borderRadius: '0.5rem',
+              border: '2px solid #2D2D2D',
+              background: adminSection ? '#902212' : '#ECE5DE',
+              color: adminSection ? '#FFFEF5' : '#2D2D2D',
+              fontWeight: 700,
+              fontSize: '1rem',
+              boxShadow: '3px 3px 0px rgba(0, 0, 0, 0.15)',
+              marginBottom: '0.5rem',
+            }}
+          >
+            Cartes Postales
+          </div>
+          <ul
+            style={{
+              listStyle: 'none',
+              margin: '0',
+              padding: '0 0 0 0.75rem',
+              borderLeft: '3px solid #902212',
+            }}
+          >
+            {([
+              { key: 'postcardBackgrounds' as const, label: 'Photos' },
+              { key: 'postcardSubmissions' as const, label: 'Soumissions' },
+            ]).map((item) => (
+              <li key={item.key} style={{ marginBottom: '0.25rem' }}>
+                <button
+                  onClick={() => handleSelectSection(item.key)}
+                  style={{
+                    width: '100%',
+                    textAlign: 'left',
+                    padding: '0.625rem 1rem',
+                    borderRadius: '0.5rem',
+                    border: adminSection === item.key
+                      ? '2px solid #2D2D2D'
+                      : '2px solid transparent',
+                    cursor: 'pointer',
+                    transition: 'all 0.2s',
+                    fontSize: '0.9rem',
+                    background: adminSection === item.key
+                      ? '#FF6B6B'
+                      : 'transparent',
+                    color: adminSection === item.key ? '#2D2D2D' : '#4a4a4a',
+                    fontWeight: adminSection === item.key ? 600 : 500,
+                    boxShadow: adminSection === item.key
+                      ? '2px 2px 0px rgba(0, 0, 0, 0.15)'
+                      : 'none',
+                  }}
+                  onMouseEnter={(e) => {
+                    if (adminSection !== item.key) {
+                      e.currentTarget.style.background = '#f5f0eb'
+                      e.currentTarget.style.color = '#2D2D2D'
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    if (adminSection !== item.key) {
+                      e.currentTarget.style.background = 'transparent'
+                      e.currentTarget.style.color = '#4a4a4a'
+                    }
+                  }}
+                >
+                  {item.label}
+                </button>
+              </li>
+            ))}
+          </ul>
+        </div>
+
         <ul style={{ listStyle: 'none', margin: 0, padding: 0 }}>
           {BUBBLE_CATEGORIES.map((category) => {
             const isExpanded = expandedCategories.has(category.id)
-            const hasSelectedBubble = category.bubbles.includes(selectedBubble)
+            const hasSelectedBubble = selectedBubble !== null && category.bubbles.includes(selectedBubble)
 
             return (
               <li key={category.id} style={{ marginBottom: '0.5rem' }}>
@@ -138,10 +222,10 @@ export function AdminSidebar({
                     cursor: 'pointer',
                     transition: 'all 0.2s',
                     fontSize: '1rem',
-                    background: hasSelectedBubble
+                    background: hasSelectedBubble && !adminSection
                       ? '#902212'
                       : '#ECE5DE',
-                    color: hasSelectedBubble ? '#FFFEF5' : '#2D2D2D',
+                    color: hasSelectedBubble && !adminSection ? '#FFFEF5' : '#2D2D2D',
                     fontWeight: 700,
                     display: 'flex',
                     alignItems: 'center',
@@ -149,12 +233,12 @@ export function AdminSidebar({
                     boxShadow: '3px 3px 0px rgba(0, 0, 0, 0.15)',
                   }}
                   onMouseEnter={(e) => {
-                    if (!hasSelectedBubble) {
+                    if (!hasSelectedBubble || adminSection) {
                       e.currentTarget.style.background = '#d4ccc4'
                     }
                   }}
                   onMouseLeave={(e) => {
-                    if (!hasSelectedBubble) {
+                    if (!hasSelectedBubble || adminSection) {
                       e.currentTarget.style.background = '#ECE5DE'
                     }
                   }}
@@ -262,7 +346,7 @@ export function AdminSidebar({
             e.currentTarget.style.boxShadow = '3px 3px 0px rgba(0, 0, 0, 0.2)'
           }}
         >
-          Deconnexion
+          Déconnexion
         </button>
       </div>
     </>

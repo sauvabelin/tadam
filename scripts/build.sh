@@ -3,9 +3,15 @@ set -e
 
 echo "=== Building Tadam Festival ==="
 
-# Clean dist folder
-echo "Cleaning dist folder..."
-rm -rf dist
+# Clean dist contents except uploads/ — admin-uploaded images live there and
+# must survive rebuilds. Doing this in-place (no /tmp shuffle) means a build
+# crash can't strand uploads in a stale backup dir on the next run.
+echo "Cleaning dist folder (preserving uploads)..."
+if [ -d dist ]; then
+  find dist -mindepth 1 -maxdepth 1 -not -name 'uploads' -exec rm -rf {} +
+else
+  mkdir -p dist
+fi
 
 # Build frontend with Vite
 echo "Building frontend..."
@@ -21,6 +27,13 @@ cp api/index.php dist/api/
 cp api/composer.json dist/api/
 cp api/composer.lock dist/api/ 2>/dev/null || true
 cp api/.htaccess dist/api/
+if [ -d api/fonts ]; then
+  cp -r api/fonts dist/api/
+fi
+if [ -d public/assets/Stamps ]; then
+  mkdir -p dist/api/stamps
+  cp public/assets/Stamps/*.png dist/api/stamps/
+fi
 
 # Install composer dependencies
 echo "Installing PHP dependencies..."

@@ -4,12 +4,20 @@ import { useAuth } from '../../context/AuthContext'
 import { AdminLogin } from './AdminLogin'
 import { BulleId } from '../../types'
 
+export type AdminSection = 'postcardBackgrounds' | 'postcardSubmissions' | null
+
 // Lazy load the heavy editor components - only downloaded after authentication
 const AdminSidebar = lazy(() =>
   import('./AdminSidebar').then((m) => ({ default: m.AdminSidebar }))
 )
 const BubbleEditor = lazy(() =>
   import('./BubbleEditor').then((m) => ({ default: m.BubbleEditor }))
+)
+const PostcardBackgroundManager = lazy(() =>
+  import('./PostcardBackgroundManager').then((m) => ({ default: m.PostcardBackgroundManager }))
+)
+const PostcardSubmissionsList = lazy(() =>
+  import('./PostcardSubmissionsList').then((m) => ({ default: m.PostcardSubmissionsList }))
 )
 
 const MOBILE_BREAKPOINT = 768
@@ -100,7 +108,7 @@ function AuthLoadingScreen() {
             animation: 'spin 0.8s linear infinite',
           }}
         />
-        <span style={{ color: '#2D2D2D', fontWeight: 600 }}>Verification...</span>
+        <span style={{ color: '#2D2D2D', fontWeight: 600 }}>Vérification...</span>
       </div>
     </div>
   )
@@ -110,8 +118,19 @@ export function AdminPage() {
   const { isAuthenticated, isLoading, logout } = useAuth()
   const navigate = useNavigate()
   const isMobile = useIsMobile()
-  const [selectedBubble, setSelectedBubble] = useState<BulleId>('informations')
+  const [selectedBubble, setSelectedBubble] = useState<BulleId | null>('informations')
+  const [adminSection, setAdminSection] = useState<AdminSection>(null)
   const [isSidebarOpen, setIsSidebarOpen] = useState(false)
+
+  const handleSelectBubble = (id: BulleId) => {
+    setSelectedBubble(id)
+    setAdminSection(null)
+  }
+
+  const handleSetAdminSection = (section: AdminSection) => {
+    setAdminSection(section)
+    setSelectedBubble(null)
+  }
 
   const handleLoginSuccess = () => {
     // Re-render will happen automatically due to auth state change
@@ -147,7 +166,9 @@ export function AdminPage() {
       <Suspense fallback={<LoadingSpinner />}>
         <AdminSidebar
           selectedBubble={selectedBubble}
-          onSelectBubble={setSelectedBubble}
+          onSelectBubble={handleSelectBubble}
+          adminSection={adminSection}
+          onSetAdminSection={handleSetAdminSection}
           onLogout={handleLogout}
           isMobile={isMobile}
           isMobileOpen={isSidebarOpen}
@@ -217,7 +238,7 @@ export function AdminPage() {
                 textShadow: '2px 2px 0px rgba(0,0,0,0.2)',
               }}
             >
-              {isMobile ? 'Admin' : 'Editeur de Bulles'}
+              {isMobile ? 'Admin' : 'Éditeur de Bulles'}
             </h1>
           </div>
           <button
@@ -260,7 +281,17 @@ export function AdminPage() {
           }}
         >
           <Suspense fallback={<LoadingSpinner />}>
-            <BubbleEditor bubbleId={selectedBubble} isMobile={isMobile} />
+            {adminSection === 'postcardBackgrounds' ? (
+              <PostcardBackgroundManager isMobile={isMobile} />
+            ) : adminSection === 'postcardSubmissions' ? (
+              <PostcardSubmissionsList isMobile={isMobile} />
+            ) : selectedBubble ? (
+              <BubbleEditor bubbleId={selectedBubble} isMobile={isMobile} />
+            ) : (
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', color: '#6b7280' }}>
+                Sélectionnez une bulle ou une section.
+              </div>
+            )}
           </Suspense>
         </div>
       </main>
