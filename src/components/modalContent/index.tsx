@@ -1,6 +1,7 @@
 import { ReactNode } from 'react'
 import { BulleId } from '../../types'
 import { BubbleContent } from '../BubbleContent'
+import { JournalViewer } from '../JournalViewer'
 
 // Create a component factory for each bubble
 const createBubbleContent = (id: BulleId) => () => <BubbleContent bubbleId={id} />
@@ -24,7 +25,7 @@ export const modalContentRegistry: Record<BulleId, () => ReactNode> = {
   hike: createBubbleContent('hike'),
   concert: createBubbleContent('concert'),
   bouffe: createBubbleContent('bouffe'),
-  journal: createBubbleContent('journal'),
+  journal: () => <JournalViewer />,
   contact: createBubbleContent('contact'),
   dons: createBubbleContent('dons'),
   inscription: createBubbleContent('inscription'),

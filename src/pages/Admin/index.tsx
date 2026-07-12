@@ -11,6 +11,11 @@ const AdminSidebar = lazy(() =>
 const BubbleEditor = lazy(() =>
   import('./BubbleEditor').then((m) => ({ default: m.BubbleEditor }))
 )
+const JournalEditor = lazy(() =>
+  import('./JournalEditor').then((m) => ({ default: m.JournalEditor }))
+)
+
+type AdminSection = BulleId | 'journal-entries'
 
 const MOBILE_BREAKPOINT = 768
 
@@ -110,7 +115,7 @@ export function AdminPage() {
   const { isAuthenticated, isLoading, logout } = useAuth()
   const navigate = useNavigate()
   const isMobile = useIsMobile()
-  const [selectedBubble, setSelectedBubble] = useState<BulleId>('informations')
+  const [selectedSection, setSelectedSection] = useState<AdminSection>('informations')
   const [isSidebarOpen, setIsSidebarOpen] = useState(false)
 
   const handleLoginSuccess = () => {
@@ -146,8 +151,8 @@ export function AdminPage() {
     >
       <Suspense fallback={<LoadingSpinner />}>
         <AdminSidebar
-          selectedBubble={selectedBubble}
-          onSelectBubble={setSelectedBubble}
+          selectedSection={selectedSection}
+          onSelectSection={setSelectedSection}
           onLogout={handleLogout}
           isMobile={isMobile}
           isMobileOpen={isSidebarOpen}
@@ -217,7 +222,11 @@ export function AdminPage() {
                 textShadow: '2px 2px 0px rgba(0,0,0,0.2)',
               }}
             >
-              {isMobile ? 'Admin' : 'Editeur de Bulles'}
+              {isMobile
+                ? 'Admin'
+                : selectedSection === 'journal-entries'
+                  ? 'Journal — Entrées'
+                  : 'Editeur de Bulles'}
             </h1>
           </div>
           <button
@@ -260,7 +269,11 @@ export function AdminPage() {
           }}
         >
           <Suspense fallback={<LoadingSpinner />}>
-            <BubbleEditor bubbleId={selectedBubble} isMobile={isMobile} />
+            {selectedSection === 'journal-entries' ? (
+              <JournalEditor isMobile={isMobile} />
+            ) : (
+              <BubbleEditor bubbleId={selectedSection as BulleId} isMobile={isMobile} />
+            )}
           </Suspense>
         </div>
       </main>

@@ -1,6 +1,8 @@
 import { useState } from 'react'
 import { BulleId, BUBBLE_CATEGORIES, BubbleCategory } from '../../types'
 
+export type AdminSection = BulleId | 'journal-entries'
+
 const BUBBLE_LABELS: Record<BulleId, string> = {
   informations: 'Informations',
   train: 'Train',
@@ -23,8 +25,8 @@ const BUBBLE_LABELS: Record<BulleId, string> = {
 }
 
 interface AdminSidebarProps {
-  selectedBubble: BulleId
-  onSelectBubble: (id: BulleId) => void
+  selectedSection: AdminSection
+  onSelectSection: (section: AdminSection) => void
   onLogout: () => void
   isMobileOpen: boolean
   onMobileClose: () => void
@@ -32,8 +34,8 @@ interface AdminSidebarProps {
 }
 
 export function AdminSidebar({
-  selectedBubble,
-  onSelectBubble,
+  selectedSection,
+  onSelectSection,
   onLogout,
   isMobileOpen,
   onMobileClose,
@@ -44,8 +46,8 @@ export function AdminSidebar({
     new Set(BUBBLE_CATEGORIES.map(c => c.id))
   )
 
-  const handleSelect = (id: BulleId) => {
-    onSelectBubble(id)
+  const handleSelect = (section: AdminSection) => {
+    onSelectSection(section)
     if (isMobile) {
       onMobileClose()
     }
@@ -120,9 +122,46 @@ export function AdminSidebar({
         }}
       >
         <ul style={{ listStyle: 'none', margin: 0, padding: 0 }}>
+          {/* Journal entries section */}
+          <li style={{ marginBottom: '0.75rem' }}>
+            <button
+              onClick={() => handleSelect('journal-entries')}
+              style={{
+                width: '100%',
+                textAlign: 'left',
+                padding: '0.75rem 1rem',
+                borderRadius: '0.5rem',
+                border: '2px solid #2D2D2D',
+                cursor: 'pointer',
+                transition: 'all 0.2s',
+                fontSize: '1rem',
+                background: selectedSection === 'journal-entries' ? '#902212' : '#ECE5DE',
+                color: selectedSection === 'journal-entries' ? '#FFFEF5' : '#2D2D2D',
+                fontWeight: 700,
+                display: 'flex',
+                alignItems: 'center',
+                boxShadow: '3px 3px 0px rgba(0, 0, 0, 0.15)',
+              }}
+              onMouseEnter={(e) => {
+                if (selectedSection !== 'journal-entries') {
+                  e.currentTarget.style.background = '#d4ccc4'
+                }
+              }}
+              onMouseLeave={(e) => {
+                if (selectedSection !== 'journal-entries') {
+                  e.currentTarget.style.background = '#ECE5DE'
+                }
+              }}
+            >
+              Entrées de journal
+            </button>
+          </li>
+
           {BUBBLE_CATEGORIES.map((category) => {
             const isExpanded = expandedCategories.has(category.id)
-            const hasSelectedBubble = category.bubbles.includes(selectedBubble)
+            const hasSelectedBubble =
+              selectedSection !== 'journal-entries' &&
+              category.bubbles.includes(selectedSection as BulleId)
 
             return (
               <li key={category.id} style={{ marginBottom: '0.5rem' }}>
@@ -190,18 +229,18 @@ export function AdminSidebar({
                             textAlign: 'left',
                             padding: '0.625rem 1rem',
                             borderRadius: '0.5rem',
-                            border: selectedBubble === bubbleId
+                            border: selectedSection === bubbleId
                               ? '2px solid #2D2D2D'
                               : '2px solid transparent',
                             cursor: 'pointer',
                             transition: 'all 0.2s',
                             fontSize: '0.9rem',
-                            background: selectedBubble === bubbleId
+                            background: selectedSection === bubbleId
                               ? '#FF6B6B'
                               : 'transparent',
-                            color: selectedBubble === bubbleId ? '#2D2D2D' : '#4a4a4a',
-                            fontWeight: selectedBubble === bubbleId ? 600 : 500,
-                            boxShadow: selectedBubble === bubbleId
+                            color: selectedSection === bubbleId ? '#2D2D2D' : '#4a4a4a',
+                            fontWeight: selectedSection === bubbleId ? 600 : 500,
+                            boxShadow: selectedSection === bubbleId
                               ? '2px 2px 0px rgba(0, 0, 0, 0.15)'
                               : 'none',
                           }}
