@@ -8,6 +8,7 @@ import {
   cleanupUnusedImages,
   ImageData,
 } from '../../api/bubbleApi'
+import { compressImage } from '../../utils/imageResize'
 
 interface ImageUploadModalProps {
   isOpen: boolean
@@ -91,12 +92,6 @@ export function ImageUploadModal({
         return
       }
 
-      // Validate file size (5MB)
-      if (file.size > 5 * 1024 * 1024) {
-        setError('Fichier trop volumineux. Maximum 5MB.')
-        return
-      }
-
       // Show preview
       const reader = new FileReader()
       reader.onload = (e) => {
@@ -104,19 +99,28 @@ export function ImageUploadModal({
       }
       reader.readAsDataURL(file)
 
-      // Upload file
+      // Compress and upload file
       setIsUploading(true)
-      const result = await uploadImage(file, bubbleId)
+      let compressed: File
+      try {
+        compressed = await compressImage(file)
+      } catch (err) {
+        setIsUploading(false)
+        setPreview(null)
+        setError(err instanceof Error ? err.message : "Erreur lors de la compression")
+        return
+      }
+      const { data, error: uploadError } = await uploadImage(compressed, bubbleId)
       setIsUploading(false)
 
-      if (result) {
-        setUploadedImage(result)
+      if (data) {
+        setUploadedImage(data)
         // Refresh collection if loaded
         if (images.length > 0) {
           loadImages()
         }
       } else {
-        setError("Erreur lors de l'upload")
+        setError(uploadError || "Erreur lors de l'upload")
         setPreview(null)
       }
     },
@@ -181,7 +185,7 @@ export function ImageUploadModal({
   }, [])
 
   const handleCleanupUnused = useCallback(async () => {
-    if (!confirm('Supprimer toutes les images non utilisees?')) return
+    if (!confirm('Supprimer toutes les images non utilisées ?')) return
 
     setIsDeleting(true)
     const count = await cleanupUnusedImages()
@@ -387,7 +391,7 @@ export function ImageUploadModal({
                       <p style={{ color: '#6b7280', margin: 0 }}>Upload en cours...</p>
                     )}
                     {uploadedImage && (
-                      <p style={{ color: '#10b981', margin: 0 }}>Upload reussi</p>
+                      <p style={{ color: '#10b981', margin: 0 }}>Upload réussi</p>
                     )}
                   </div>
                 ) : (
@@ -587,7 +591,7 @@ export function ImageUploadModal({
                       color: filter === 'unused' ? 'white' : unusedCount > 0 ? '#dc2626' : '#374151',
                     }}
                   >
-                    Non utilisees ({unusedCount})
+                    Non utilisées ({unusedCount})
                   </button>
                 </div>
 
@@ -640,7 +644,7 @@ export function ImageUploadModal({
                   </div>
                 ) : filteredImages.length === 0 ? (
                   <div style={{ textAlign: 'center', padding: '2rem', color: '#6b7280' }}>
-                    {searchTerm ? 'Aucun resultat' : 'Aucune image uploadee'}
+                    {searchTerm ? 'Aucun résultat' : 'Aucune image uploadée'}
                   </div>
                 ) : (
                   <div
@@ -704,7 +708,7 @@ export function ImageUploadModal({
                                 borderRadius: '3px',
                               }}
                             >
-                              Non utilisee
+                              Non utilisée
                             </div>
                           )}
 
@@ -860,7 +864,7 @@ export function ImageUploadModal({
                 color: 'white',
               }}
             >
-              Inserer
+              Insérer
             </button>
           </div>
         )}

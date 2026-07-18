@@ -90,6 +90,8 @@ export function AdminLogin({ onSuccess }: AdminLoginProps) {
           <input
             type="password"
             id="password"
+            name="password"
+            autoComplete="current-password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             disabled={isSubmitting}

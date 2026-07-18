@@ -269,7 +269,13 @@ export async function reorderTabs(
 export async function uploadImage(
   file: File,
   bubbleId?: string
-): Promise<ImageData | null> {
+): Promise<{ data: ImageData | null; error?: string }> {
+  // Client-side size check (10MB limit matching server)
+  const MAX_SIZE = 10 * 1024 * 1024
+  if (file.size > MAX_SIZE) {
+    return { data: null, error: `Fichier trop volumineux (${(file.size / 1024 / 1024).toFixed(1)} Mo). Maximum: 10 Mo.` }
+  }
+
   try {
     const formData = new FormData()
     formData.append('file', file)
@@ -285,16 +291,27 @@ export async function uploadImage(
       body: formData,
     })
 
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}))
-      console.error('Upload failed:', errorData.error || response.status)
-      return null
+    const text = await response.text()
+    let json: Record<string, unknown> | null = null
+    try {
+      json = JSON.parse(text)
+    } catch {
+      // Server returned non-JSON (e.g. HTML error page)
     }
 
-    return await response.json()
+    if (!response.ok) {
+      const errMsg = (json?.error as string) || `Erreur serveur (${response.status})`
+      return { data: null, error: errMsg }
+    }
+
+    if (!json) {
+      return { data: null, error: 'Reponse invalide du serveur' }
+    }
+
+    return { data: json as unknown as ImageData }
   } catch (error) {
     console.error('Error uploading image:', error)
-    return null
+    return { data: null, error: 'Erreur de connexion' }
   }
 }
 

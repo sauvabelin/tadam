@@ -1,7 +1,9 @@
 import { useState } from 'react'
 import { BulleId, BUBBLE_CATEGORIES, BubbleCategory } from '../../types'
+import type { AdminSection } from './index'
 
-export type AdminSection = BulleId | 'journal-entries'
+const isBubbleSection = (section: AdminSection): section is BulleId =>
+  section !== 'journal-entries' && section !== 'postcardBackgrounds' && section !== 'postcardSubmissions'
 
 const BUBBLE_LABELS: Record<BulleId, string> = {
   informations: 'Informations',
@@ -52,6 +54,8 @@ export function AdminSidebar({
       onMobileClose()
     }
   }
+
+  const isPostcardSection = selectedSection === 'postcardBackgrounds' || selectedSection === 'postcardSubmissions'
 
   const toggleCategory = (categoryId: BubbleCategory) => {
     setExpandedCategories(prev => {
@@ -121,6 +125,78 @@ export function AdminSidebar({
           background: '#FFFEF5',
         }}
       >
+        {/* Cartes Postales section */}
+        <div style={{ marginBottom: '0.75rem' }}>
+          <div
+            style={{
+              padding: '0.75rem 1rem',
+              borderRadius: '0.5rem',
+              border: '2px solid #2D2D2D',
+              background: isPostcardSection ? '#902212' : '#ECE5DE',
+              color: isPostcardSection ? '#FFFEF5' : '#2D2D2D',
+              fontWeight: 700,
+              fontSize: '1rem',
+              boxShadow: '3px 3px 0px rgba(0, 0, 0, 0.15)',
+              marginBottom: '0.5rem',
+            }}
+          >
+            Cartes Postales
+          </div>
+          <ul
+            style={{
+              listStyle: 'none',
+              margin: '0',
+              padding: '0 0 0 0.75rem',
+              borderLeft: '3px solid #902212',
+            }}
+          >
+            {([
+              { key: 'postcardBackgrounds' as const, label: 'Photos' },
+              { key: 'postcardSubmissions' as const, label: 'Soumissions' },
+            ]).map((item) => (
+              <li key={item.key} style={{ marginBottom: '0.25rem' }}>
+                <button
+                  onClick={() => handleSelect(item.key)}
+                  style={{
+                    width: '100%',
+                    textAlign: 'left',
+                    padding: '0.625rem 1rem',
+                    borderRadius: '0.5rem',
+                    border: selectedSection === item.key
+                      ? '2px solid #2D2D2D'
+                      : '2px solid transparent',
+                    cursor: 'pointer',
+                    transition: 'all 0.2s',
+                    fontSize: '0.9rem',
+                    background: selectedSection === item.key
+                      ? '#FF6B6B'
+                      : 'transparent',
+                    color: selectedSection === item.key ? '#2D2D2D' : '#4a4a4a',
+                    fontWeight: selectedSection === item.key ? 600 : 500,
+                    boxShadow: selectedSection === item.key
+                      ? '2px 2px 0px rgba(0, 0, 0, 0.15)'
+                      : 'none',
+                  }}
+                  onMouseEnter={(e) => {
+                    if (selectedSection !== item.key) {
+                      e.currentTarget.style.background = '#f5f0eb'
+                      e.currentTarget.style.color = '#2D2D2D'
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    if (selectedSection !== item.key) {
+                      e.currentTarget.style.background = 'transparent'
+                      e.currentTarget.style.color = '#4a4a4a'
+                    }
+                  }}
+                >
+                  {item.label}
+                </button>
+              </li>
+            ))}
+          </ul>
+        </div>
+
         <ul style={{ listStyle: 'none', margin: 0, padding: 0 }}>
           {/* Journal entries section */}
           <li style={{ marginBottom: '0.75rem' }}>
@@ -160,8 +236,8 @@ export function AdminSidebar({
           {BUBBLE_CATEGORIES.map((category) => {
             const isExpanded = expandedCategories.has(category.id)
             const hasSelectedBubble =
-              selectedSection !== 'journal-entries' &&
-              category.bubbles.includes(selectedSection as BulleId)
+              isBubbleSection(selectedSection) &&
+              category.bubbles.includes(selectedSection)
 
             return (
               <li key={category.id} style={{ marginBottom: '0.5rem' }}>
@@ -245,13 +321,13 @@ export function AdminSidebar({
                               : 'none',
                           }}
                           onMouseEnter={(e) => {
-                            if (selectedBubble !== bubbleId) {
+                            if (selectedSection !== bubbleId) {
                               e.currentTarget.style.background = '#f5f0eb'
                               e.currentTarget.style.color = '#2D2D2D'
                             }
                           }}
                           onMouseLeave={(e) => {
-                            if (selectedBubble !== bubbleId) {
+                            if (selectedSection !== bubbleId) {
                               e.currentTarget.style.background = 'transparent'
                               e.currentTarget.style.color = '#4a4a4a'
                             }
@@ -301,7 +377,7 @@ export function AdminSidebar({
             e.currentTarget.style.boxShadow = '3px 3px 0px rgba(0, 0, 0, 0.2)'
           }}
         >
-          Deconnexion
+          Déconnexion
         </button>
       </div>
     </>

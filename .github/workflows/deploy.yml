@@ -41,8 +41,13 @@ jobs:
           protocol: ftps
           local-dir: ./dist/
           server-dir: ${{ secrets.FTP_REMOTE_PATH }}
+          # uploads/** is excluded so deploys never upload OR delete user-
+          # uploaded images on the server (they aren't in the build). Per
+          # FTP-Deploy-Action, excluded files already on the host are kept,
+          # not removed — so previously uploaded images survive every deploy.
           exclude: |
             **/.git*
             **/.env
             **/Dockerfile
             **/.dockerignore
+            **/uploads/**

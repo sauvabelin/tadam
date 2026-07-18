@@ -14,8 +14,14 @@ const BubbleEditor = lazy(() =>
 const JournalEditor = lazy(() =>
   import('./JournalEditor').then((m) => ({ default: m.JournalEditor }))
 )
+const PostcardBackgroundManager = lazy(() =>
+  import('./PostcardBackgroundManager').then((m) => ({ default: m.PostcardBackgroundManager }))
+)
+const PostcardSubmissionsList = lazy(() =>
+  import('./PostcardSubmissionsList').then((m) => ({ default: m.PostcardSubmissionsList }))
+)
 
-type AdminSection = BulleId | 'journal-entries'
+export type AdminSection = BulleId | 'journal-entries' | 'postcardBackgrounds' | 'postcardSubmissions'
 
 const MOBILE_BREAKPOINT = 768
 
@@ -105,7 +111,7 @@ function AuthLoadingScreen() {
             animation: 'spin 0.8s linear infinite',
           }}
         />
-        <span style={{ color: '#2D2D2D', fontWeight: 600 }}>Verification...</span>
+        <span style={{ color: '#2D2D2D', fontWeight: 600 }}>Vérification...</span>
       </div>
     </div>
   )
@@ -226,7 +232,9 @@ export function AdminPage() {
                 ? 'Admin'
                 : selectedSection === 'journal-entries'
                   ? 'Journal — Entrées'
-                  : 'Editeur de Bulles'}
+                  : selectedSection === 'postcardBackgrounds' || selectedSection === 'postcardSubmissions'
+                    ? 'Cartes Postales'
+                    : 'Editeur de Bulles'}
             </h1>
           </div>
           <button
@@ -271,6 +279,10 @@ export function AdminPage() {
           <Suspense fallback={<LoadingSpinner />}>
             {selectedSection === 'journal-entries' ? (
               <JournalEditor isMobile={isMobile} />
+            ) : selectedSection === 'postcardBackgrounds' ? (
+              <PostcardBackgroundManager isMobile={isMobile} />
+            ) : selectedSection === 'postcardSubmissions' ? (
+              <PostcardSubmissionsList isMobile={isMobile} />
             ) : (
               <BubbleEditor bubbleId={selectedSection as BulleId} isMobile={isMobile} />
             )}

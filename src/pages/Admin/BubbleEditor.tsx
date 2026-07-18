@@ -247,7 +247,7 @@ export function BubbleEditor({ bubbleId, isMobile }: BubbleEditorProps) {
         },
       }),
       ImageResizeMarkdown,
-      Placeholder.configure({ placeholder: 'Commencez a ecrire...' }),
+      Placeholder.configure({ placeholder: 'Commencez à écrire...' }),
       Markdown.configure({
         html: true,
         transformPastedText: true,
@@ -409,7 +409,7 @@ export function BubbleEditor({ bubbleId, isMobile }: BubbleEditorProps) {
       }
     } catch (err) {
       console.error('Failed to create tab:', err)
-      setError('Erreur lors de la creation de l\'onglet')
+      setError('Erreur lors de la création de l\'onglet')
     }
   }
 
@@ -599,7 +599,7 @@ export function BubbleEditor({ bubbleId, isMobile }: BubbleEditorProps) {
                 border: '2px solid #2D2D2D',
               }}
             >
-              Sauvegarde
+              Sauvegardé
             </span>
           )}
 
@@ -626,7 +626,7 @@ export function BubbleEditor({ bubbleId, isMobile }: BubbleEditorProps) {
               e.currentTarget.style.boxShadow = '3px 3px 0px rgba(0, 0, 0, 0.15)'
             }}
           >
-            Previsualiser
+            Prévisualiser
           </button>
           <button
             onClick={handleSave}
@@ -736,7 +736,7 @@ export function BubbleEditor({ bubbleId, isMobile }: BubbleEditorProps) {
             {idx > 0 && (
               <button
                 onClick={(e) => { e.stopPropagation(); handleMoveTab(tab.id, 'up') }}
-                title="Deplacer a gauche"
+                title="Déplacer à gauche"
                 style={{
                   background: 'none', border: 'none', cursor: 'pointer', padding: '0 2px',
                   fontSize: '0.65rem',
@@ -750,7 +750,7 @@ export function BubbleEditor({ bubbleId, isMobile }: BubbleEditorProps) {
             {idx < tabs.length - 1 && (
               <button
                 onClick={(e) => { e.stopPropagation(); handleMoveTab(tab.id, 'down') }}
-                title="Deplacer a droite"
+                title="Déplacer à droite"
                 style={{
                   background: 'none', border: 'none', cursor: 'pointer', padding: '0 2px',
                   fontSize: '0.65rem',
@@ -853,7 +853,7 @@ export function BubbleEditor({ bubbleId, isMobile }: BubbleEditorProps) {
           <ToolbarButton
             onClick={() => editor.chain().focus().toggleStrike().run()}
             isActive={editor.isActive('strike')}
-            title="Barre"
+            title="Barré"
           >
             {Icons.strike}
           </ToolbarButton>
@@ -889,14 +889,14 @@ export function BubbleEditor({ bubbleId, isMobile }: BubbleEditorProps) {
           <ToolbarButton
             onClick={() => editor.chain().focus().toggleBulletList().run()}
             isActive={editor.isActive('bulletList')}
-            title="Liste a puces"
+            title="Liste à puces"
           >
             {Icons.bulletList}
           </ToolbarButton>
           <ToolbarButton
             onClick={() => editor.chain().focus().toggleOrderedList().run()}
             isActive={editor.isActive('orderedList')}
-            title="Liste numerotee"
+            title="Liste numérotée"
           >
             {Icons.orderedList}
           </ToolbarButton>
@@ -946,7 +946,7 @@ export function BubbleEditor({ bubbleId, isMobile }: BubbleEditorProps) {
           <ToolbarButton
             onClick={() => editor.chain().focus().redo().run()}
             disabled={!editor.can().redo()}
-            title="Retablir (Ctrl+Y)"
+            title="Rétablir (Ctrl+Y)"
           >
             {Icons.redo}
           </ToolbarButton>
