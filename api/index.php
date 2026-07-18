@@ -19,6 +19,7 @@ $config = require __DIR__ . '/config/config.php';
 use Tadam\AuthController;
 use Tadam\BubbleController;
 use Tadam\ImageController;
+use Tadam\JournalController;
 use Tadam\PostcardController;
 use Tadam\Migrator;
 use Tadam\RateLimiter;
@@ -331,9 +332,10 @@ if ($method === 'POST' && $path === '/postcards') {
     }
 }
 
-// Public endpoint check (GET requests don't require auth, except for images and postcards admin routes)
+// Public endpoint check (GET requests don't require auth, except for images, journal export, and postcards admin routes)
 $requiresAuth = $method !== 'GET'
     || str_starts_with($path, '/images')
+    || $path === '/journal/export'
     || str_starts_with($path, '/postcards');
 
 // Authenticate for non-GET requests
@@ -563,6 +565,72 @@ if ($method === 'DELETE' && preg_match('#^/images/(\d+)$#', $path, $matches)) {
     } catch (\Exception $e) {
         error_log('Failed to delete image: ' . $e->getMessage());
         errorResponse('Failed to delete image: ' . $e->getMessage(), 500);
+    }
+}
+
+// ============================================
+// JOURNAL ROUTES
+// ============================================
+
+$journalController = new JournalController();
+
+// Route: GET /journal/export - Export entries as PDF (auth required)
+if ($method === 'GET' && $path === '/journal/export') {
+    $from = $_GET['from'] ?? null;
+    $to = $_GET['to'] ?? null;
+
+    // Validate date format if provided
+    if ($from !== null && !preg_match('/^\d{4}-\d{2}-\d{2}$/', $from)) {
+        errorResponse('Invalid from date format (expected YYYY-MM-DD)', 400);
+    }
+    if ($to !== null && !preg_match('/^\d{4}-\d{2}-\d{2}$/', $to)) {
+        errorResponse('Invalid to date format (expected YYYY-MM-DD)', 400);
+    }
+
+    $journalController->exportPdf($from ?: null, $to ?: null);
+}
+
+// Route: GET /journal - List all entries (public)
+if ($method === 'GET' && $path === '/journal') {
+    $from = $_GET['from'] ?? null;
+    $to = $_GET['to'] ?? null;
+    $entries = $journalController->list($from ?: null, $to ?: null);
+    jsonResponse($entries);
+}
+
+// Route: GET /journal/{date} - Get single entry (public)
+if ($method === 'GET' && preg_match('#^/journal/(\d{4}-\d{2}-\d{2})$#', $path, $matches)) {
+    $date = $matches[1];
+    $entry = $journalController->get($date);
+
+    if ($entry === null) {
+        errorResponse('Entry not found', 404);
+    }
+
+    jsonResponse($entry);
+}
+
+// Route: POST /journal/{date} - Create or update entry (auth required)
+if ($method === 'POST' && preg_match('#^/journal/(\d{4}-\d{2}-\d{2})$#', $path, $matches)) {
+    $date = $matches[1];
+    $data = getJsonBody();
+
+    try {
+        $entry = $journalController->save($date, $data);
+        jsonResponse($entry);
+    } catch (\Exception $e) {
+        errorResponse('Failed to save entry: ' . $e->getMessage(), 500);
+    }
+}
+
+// Route: DELETE /journal/{date} - Delete entry (auth required)
+if ($method === 'DELETE' && preg_match('#^/journal/(\d{4}-\d{2}-\d{2})$#', $path, $matches)) {
+    $date = $matches[1];
+
+    if ($journalController->delete($date)) {
+        jsonResponse(['success' => true]);
+    } else {
+        errorResponse('Entry not found', 404);
     }
 }
 

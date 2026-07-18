@@ -1,0 +1,60 @@
+services:
+  db:
+    image: mysql:8.0
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: tadam
+      MYSQL_USER: tadam
+      MYSQL_PASSWORD: tadam
+    ports:
+      - "3307:3306"
+    volumes:
+      - db_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-proot"]
+      interval: 5s
+      timeout: 5s
+      retries: 15
+
+  api:
+    build:
+      context: ./api
+      dockerfile: Dockerfile.dev
+    restart: unless-stopped
+    volumes:
+      - ./api:/app
+      - vendor:/app/vendor
+    ports:
+      - "8080:8080"
+    environment:
+      MYSQL_HOST: db
+      MYSQL_PORT: 3306
+      MYSQL_DATABASE: tadam
+      MYSQL_USER: tadam
+      MYSQL_PASSWORD: tadam
+      ADMIN_PASSWORD: changeme
+      SESSION_EXPIRY: 86400
+      ALLOWED_ORIGINS: "http://localhost:5174,http://localhost:8080"
+    command: >
+      sh -c "composer update --no-interaction && php -S 0.0.0.0:8080 index.php"
+    depends_on:
+      db:
+        condition: service_healthy
+
+  frontend:
+    image: node:20-alpine
+    network_mode: host
+    working_dir: /app
+    volumes:
+      - .:/app
+      - node_modules:/app/node_modules
+    command: >
+      sh -c "npm install && npm run dev -- --port 5174"
+    depends_on:
+      - api
+
+volumes:
+  db_data:
+  vendor:
+  node_modules:

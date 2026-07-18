@@ -2,6 +2,9 @@ import { useState } from 'react'
 import { BulleId, BUBBLE_CATEGORIES, BubbleCategory } from '../../types'
 import type { AdminSection } from './index'
 
+const isBubbleSection = (section: AdminSection): section is BulleId =>
+  section !== 'journal-entries' && section !== 'postcardBackgrounds' && section !== 'postcardSubmissions'
+
 const BUBBLE_LABELS: Record<BulleId, string> = {
   informations: 'Informations',
   train: 'Train',
@@ -24,10 +27,8 @@ const BUBBLE_LABELS: Record<BulleId, string> = {
 }
 
 interface AdminSidebarProps {
-  selectedBubble: BulleId | null
-  onSelectBubble: (id: BulleId) => void
-  adminSection: AdminSection
-  onSetAdminSection: (section: AdminSection) => void
+  selectedSection: AdminSection
+  onSelectSection: (section: AdminSection) => void
   onLogout: () => void
   isMobileOpen: boolean
   onMobileClose: () => void
@@ -35,10 +36,8 @@ interface AdminSidebarProps {
 }
 
 export function AdminSidebar({
-  selectedBubble,
-  onSelectBubble,
-  adminSection,
-  onSetAdminSection,
+  selectedSection,
+  onSelectSection,
   onLogout,
   isMobileOpen,
   onMobileClose,
@@ -49,19 +48,14 @@ export function AdminSidebar({
     new Set(BUBBLE_CATEGORIES.map(c => c.id))
   )
 
-  const handleSelect = (id: BulleId) => {
-    onSelectBubble(id)
+  const handleSelect = (section: AdminSection) => {
+    onSelectSection(section)
     if (isMobile) {
       onMobileClose()
     }
   }
 
-  const handleSelectSection = (section: AdminSection) => {
-    onSetAdminSection(section)
-    if (isMobile) {
-      onMobileClose()
-    }
-  }
+  const isPostcardSection = selectedSection === 'postcardBackgrounds' || selectedSection === 'postcardSubmissions'
 
   const toggleCategory = (categoryId: BubbleCategory) => {
     setExpandedCategories(prev => {
@@ -138,8 +132,8 @@ export function AdminSidebar({
               padding: '0.75rem 1rem',
               borderRadius: '0.5rem',
               border: '2px solid #2D2D2D',
-              background: adminSection ? '#902212' : '#ECE5DE',
-              color: adminSection ? '#FFFEF5' : '#2D2D2D',
+              background: isPostcardSection ? '#902212' : '#ECE5DE',
+              color: isPostcardSection ? '#FFFEF5' : '#2D2D2D',
               fontWeight: 700,
               fontSize: '1rem',
               boxShadow: '3px 3px 0px rgba(0, 0, 0, 0.15)',
@@ -162,35 +156,35 @@ export function AdminSidebar({
             ]).map((item) => (
               <li key={item.key} style={{ marginBottom: '0.25rem' }}>
                 <button
-                  onClick={() => handleSelectSection(item.key)}
+                  onClick={() => handleSelect(item.key)}
                   style={{
                     width: '100%',
                     textAlign: 'left',
                     padding: '0.625rem 1rem',
                     borderRadius: '0.5rem',
-                    border: adminSection === item.key
+                    border: selectedSection === item.key
                       ? '2px solid #2D2D2D'
                       : '2px solid transparent',
                     cursor: 'pointer',
                     transition: 'all 0.2s',
                     fontSize: '0.9rem',
-                    background: adminSection === item.key
+                    background: selectedSection === item.key
                       ? '#FF6B6B'
                       : 'transparent',
-                    color: adminSection === item.key ? '#2D2D2D' : '#4a4a4a',
-                    fontWeight: adminSection === item.key ? 600 : 500,
-                    boxShadow: adminSection === item.key
+                    color: selectedSection === item.key ? '#2D2D2D' : '#4a4a4a',
+                    fontWeight: selectedSection === item.key ? 600 : 500,
+                    boxShadow: selectedSection === item.key
                       ? '2px 2px 0px rgba(0, 0, 0, 0.15)'
                       : 'none',
                   }}
                   onMouseEnter={(e) => {
-                    if (adminSection !== item.key) {
+                    if (selectedSection !== item.key) {
                       e.currentTarget.style.background = '#f5f0eb'
                       e.currentTarget.style.color = '#2D2D2D'
                     }
                   }}
                   onMouseLeave={(e) => {
-                    if (adminSection !== item.key) {
+                    if (selectedSection !== item.key) {
                       e.currentTarget.style.background = 'transparent'
                       e.currentTarget.style.color = '#4a4a4a'
                     }
@@ -204,9 +198,46 @@ export function AdminSidebar({
         </div>
 
         <ul style={{ listStyle: 'none', margin: 0, padding: 0 }}>
+          {/* Journal entries section */}
+          <li style={{ marginBottom: '0.75rem' }}>
+            <button
+              onClick={() => handleSelect('journal-entries')}
+              style={{
+                width: '100%',
+                textAlign: 'left',
+                padding: '0.75rem 1rem',
+                borderRadius: '0.5rem',
+                border: '2px solid #2D2D2D',
+                cursor: 'pointer',
+                transition: 'all 0.2s',
+                fontSize: '1rem',
+                background: selectedSection === 'journal-entries' ? '#902212' : '#ECE5DE',
+                color: selectedSection === 'journal-entries' ? '#FFFEF5' : '#2D2D2D',
+                fontWeight: 700,
+                display: 'flex',
+                alignItems: 'center',
+                boxShadow: '3px 3px 0px rgba(0, 0, 0, 0.15)',
+              }}
+              onMouseEnter={(e) => {
+                if (selectedSection !== 'journal-entries') {
+                  e.currentTarget.style.background = '#d4ccc4'
+                }
+              }}
+              onMouseLeave={(e) => {
+                if (selectedSection !== 'journal-entries') {
+                  e.currentTarget.style.background = '#ECE5DE'
+                }
+              }}
+            >
+              Entrées de journal
+            </button>
+          </li>
+
           {BUBBLE_CATEGORIES.map((category) => {
             const isExpanded = expandedCategories.has(category.id)
-            const hasSelectedBubble = selectedBubble !== null && category.bubbles.includes(selectedBubble)
+            const hasSelectedBubble =
+              isBubbleSection(selectedSection) &&
+              category.bubbles.includes(selectedSection)
 
             return (
               <li key={category.id} style={{ marginBottom: '0.5rem' }}>
@@ -222,10 +253,10 @@ export function AdminSidebar({
                     cursor: 'pointer',
                     transition: 'all 0.2s',
                     fontSize: '1rem',
-                    background: hasSelectedBubble && !adminSection
+                    background: hasSelectedBubble
                       ? '#902212'
                       : '#ECE5DE',
-                    color: hasSelectedBubble && !adminSection ? '#FFFEF5' : '#2D2D2D',
+                    color: hasSelectedBubble ? '#FFFEF5' : '#2D2D2D',
                     fontWeight: 700,
                     display: 'flex',
                     alignItems: 'center',
@@ -233,12 +264,12 @@ export function AdminSidebar({
                     boxShadow: '3px 3px 0px rgba(0, 0, 0, 0.15)',
                   }}
                   onMouseEnter={(e) => {
-                    if (!hasSelectedBubble || adminSection) {
+                    if (!hasSelectedBubble) {
                       e.currentTarget.style.background = '#d4ccc4'
                     }
                   }}
                   onMouseLeave={(e) => {
-                    if (!hasSelectedBubble || adminSection) {
+                    if (!hasSelectedBubble) {
                       e.currentTarget.style.background = '#ECE5DE'
                     }
                   }}
@@ -274,29 +305,29 @@ export function AdminSidebar({
                             textAlign: 'left',
                             padding: '0.625rem 1rem',
                             borderRadius: '0.5rem',
-                            border: selectedBubble === bubbleId
+                            border: selectedSection === bubbleId
                               ? '2px solid #2D2D2D'
                               : '2px solid transparent',
                             cursor: 'pointer',
                             transition: 'all 0.2s',
                             fontSize: '0.9rem',
-                            background: selectedBubble === bubbleId
+                            background: selectedSection === bubbleId
                               ? '#FF6B6B'
                               : 'transparent',
-                            color: selectedBubble === bubbleId ? '#2D2D2D' : '#4a4a4a',
-                            fontWeight: selectedBubble === bubbleId ? 600 : 500,
-                            boxShadow: selectedBubble === bubbleId
+                            color: selectedSection === bubbleId ? '#2D2D2D' : '#4a4a4a',
+                            fontWeight: selectedSection === bubbleId ? 600 : 500,
+                            boxShadow: selectedSection === bubbleId
                               ? '2px 2px 0px rgba(0, 0, 0, 0.15)'
                               : 'none',
                           }}
                           onMouseEnter={(e) => {
-                            if (selectedBubble !== bubbleId) {
+                            if (selectedSection !== bubbleId) {
                               e.currentTarget.style.background = '#f5f0eb'
                               e.currentTarget.style.color = '#2D2D2D'
                             }
                           }}
                           onMouseLeave={(e) => {
-                            if (selectedBubble !== bubbleId) {
+                            if (selectedSection !== bubbleId) {
                               e.currentTarget.style.background = 'transparent'
                               e.currentTarget.style.color = '#4a4a4a'
                             }
