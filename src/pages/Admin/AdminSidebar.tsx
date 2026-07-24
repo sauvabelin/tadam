@@ -203,6 +203,28 @@ export function AdminSidebar({
           </ul>
         </div>
 
+        {/* Journaux section */}
+        <div style={{ marginBottom: '0.75rem' }}>
+          <button
+            onClick={() => handleSelectSection('journaux')}
+            style={{
+              width: '100%',
+              textAlign: 'left',
+              padding: '0.75rem 1rem',
+              borderRadius: '0.5rem',
+              border: '2px solid #2D2D2D',
+              background: adminSection === 'journaux' ? '#902212' : '#ECE5DE',
+              color: adminSection === 'journaux' ? '#FFFEF5' : '#2D2D2D',
+              fontWeight: 700,
+              fontSize: '1rem',
+              cursor: 'pointer',
+              boxShadow: '3px 3px 0px rgba(0, 0, 0, 0.15)',
+            }}
+          >
+            Journaux
+          </button>
+        </div>
+
         <ul style={{ listStyle: 'none', margin: 0, padding: 0 }}>
           {BUBBLE_CATEGORIES.map((category) => {
             const isExpanded = expandedCategories.has(category.id)

@@ -19,6 +19,7 @@ $config = require __DIR__ . '/config/config.php';
 use Tadam\AuthController;
 use Tadam\BubbleController;
 use Tadam\ImageController;
+use Tadam\JournalController;
 use Tadam\PostcardController;
 use Tadam\Migrator;
 use Tadam\RateLimiter;
@@ -331,6 +332,22 @@ if ($method === 'POST' && $path === '/postcards') {
     }
 }
 
+// ============================================
+// PUBLIC JOURNAUX ROUTE (before auth check)
+// ============================================
+
+$journalController = new JournalController();
+
+// Route: GET /journaux - List journaux (public)
+if ($method === 'GET' && $path === '/journaux') {
+    try {
+        jsonResponse($journalController->list());
+    } catch (\Throwable $e) {
+        error_log('list journaux (public) failed: ' . $e->getMessage());
+        errorResponse('Erreur lors du chargement des journaux', 500);
+    }
+}
+
 // Public endpoint check (GET requests don't require auth, except for images and postcards admin routes)
 $requiresAuth = $method !== 'GET'
     || str_starts_with($path, '/images')
@@ -563,6 +580,59 @@ if ($method === 'DELETE' && preg_match('#^/images/(\d+)$#', $path, $matches)) {
     } catch (\Exception $e) {
         error_log('Failed to delete image: ' . $e->getMessage());
         errorResponse('Failed to delete image: ' . $e->getMessage(), 500);
+    }
+}
+
+// ============================================
+// JOURNAUX ADMIN ROUTES (auth required)
+// ============================================
+
+// Route: POST /journaux - Upload a journal PDF
+if ($method === 'POST' && $path === '/journaux') {
+    if (!isset($_FILES['file'])) {
+        errorResponse('No file provided', 400);
+    }
+    $title = $_POST['title'] ?? '';
+    try {
+        $journal = $journalController->upload($_FILES['file'], (string)$title);
+        jsonResponse($journal, 201);
+    } catch (\InvalidArgumentException $e) {
+        errorResponse($e->getMessage(), 400);
+    } catch (\Exception $e) {
+        error_log('upload journal failed: ' . $e->getMessage());
+        errorResponse('Failed to upload journal: ' . $e->getMessage(), 500);
+    }
+}
+
+// Route: POST /journaux/{id} - Rename a journal
+if ($method === 'POST' && preg_match('#^/journaux/(\d+)$#', $path, $matches)) {
+    $id = (int)$matches[1];
+    $data = getJsonBody();
+    $title = $data['title'] ?? '';
+    try {
+        $journal = $journalController->updateTitle($id, (string)$title);
+        if ($journal === null) {
+            errorResponse('Journal not found', 404);
+        }
+        jsonResponse($journal);
+    } catch (\InvalidArgumentException $e) {
+        errorResponse($e->getMessage(), 400);
+    } catch (\Exception $e) {
+        errorResponse('Failed to update journal: ' . $e->getMessage(), 500);
+    }
+}
+
+// Route: DELETE /journaux/{id} - Delete a journal
+if ($method === 'DELETE' && preg_match('#^/journaux/(\d+)$#', $path, $matches)) {
+    $id = (int)$matches[1];
+    try {
+        if ($journalController->delete($id)) {
+            jsonResponse(['success' => true]);
+        } else {
+            errorResponse('Journal not found', 404);
+        }
+    } catch (\Exception $e) {
+        errorResponse('Failed to delete journal: ' . $e->getMessage(), 500);
     }
 }
 
