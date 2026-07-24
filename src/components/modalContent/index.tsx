@@ -1,7 +1,16 @@
-import { ReactNode } from 'react'
+import { ReactNode, lazy } from 'react'
 import { BulleId } from '../../types'
 import { BubbleContent } from '../BubbleContent'
-import { LettresContent } from '../postcards/LettresContent'
+
+// Lazy-load the PDF-heavy bubbles (pdfjs, react-pageflip, the postcard editor)
+// so those chunks download only when the user opens Lettres or Journal, keeping
+// the initial app bundle small. Rendered under the Suspense boundary in App.tsx.
+const LettresContent = lazy(() =>
+  import('../postcards/LettresContent').then((m) => ({ default: m.LettresContent }))
+)
+const JournalContent = lazy(() =>
+  import('../journaux/JournalContent').then((m) => ({ default: m.JournalContent }))
+)
 
 // Create a component factory for each bubble
 const createBubbleContent = (id: BulleId) => () => <BubbleContent bubbleId={id} />
@@ -25,7 +34,7 @@ export const modalContentRegistry: Record<BulleId, () => ReactNode> = {
   hike: createBubbleContent('hike'),
   concert: createBubbleContent('concert'),
   bouffe: createBubbleContent('bouffe'),
-  journal: createBubbleContent('journal'),
+  journal: () => <JournalContent />,
   contact: createBubbleContent('contact'),
   dons: createBubbleContent('dons'),
   inscription: createBubbleContent('inscription'),

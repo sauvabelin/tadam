@@ -4,7 +4,7 @@ import { useAuth } from '../../context/AuthContext'
 import { AdminLogin } from './AdminLogin'
 import { BulleId } from '../../types'
 
-export type AdminSection = 'postcardBackgrounds' | 'postcardSubmissions' | null
+export type AdminSection = 'postcardBackgrounds' | 'postcardSubmissions' | 'journaux' | null
 
 // Lazy load the heavy editor components - only downloaded after authentication
 const AdminSidebar = lazy(() =>
@@ -18,6 +18,9 @@ const PostcardBackgroundManager = lazy(() =>
 )
 const PostcardSubmissionsList = lazy(() =>
   import('./PostcardSubmissionsList').then((m) => ({ default: m.PostcardSubmissionsList }))
+)
+const JournalManager = lazy(() =>
+  import('./JournalManager').then((m) => ({ default: m.JournalManager }))
 )
 
 const MOBILE_BREAKPOINT = 768
@@ -285,6 +288,8 @@ export function AdminPage() {
               <PostcardBackgroundManager isMobile={isMobile} />
             ) : adminSection === 'postcardSubmissions' ? (
               <PostcardSubmissionsList isMobile={isMobile} />
+            ) : adminSection === 'journaux' ? (
+              <JournalManager isMobile={isMobile} />
             ) : selectedBubble ? (
               <BubbleEditor bubbleId={selectedBubble} isMobile={isMobile} />
             ) : (
