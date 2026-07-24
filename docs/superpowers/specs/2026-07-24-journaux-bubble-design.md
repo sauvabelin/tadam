@@ -16,8 +16,9 @@ feature is the reference implementation) and keep code changes minimal.
 
 - **Viewer:** animated page-flip using `react-pageflip` (the one new dependency),
   with page images rendered by the already-present `pdfjs-dist`.
-- **List entry:** each journal shows a **title** + a **cover thumbnail**
-  (auto-rendered from the PDF, no separate cover upload).
+- **Browse layout:** journaux are shown as a **responsive grid of cover
+  thumbnails** (not a list), each with its **title** below/on it. Covers are
+  auto-rendered from the PDF — no separate cover upload.
 - **Upload:** one PDF at a time with a title; `application/pdf` only, ≤ 10 MB
   (already the configured PHP limit — no infra change).
 - **Source PDF format:** **2-up booklet imposition**. Each PDF page holds two
@@ -121,12 +122,13 @@ deleteJournal(id: number): Promise<Result<void>>          // auth
 
 ## Bubble UX — `JournalContent`
 
-Two-state component, following the `LettresContent` pattern (list ↔ detail):
+Two-state component, following the `LettresContent` pattern (grid ↔ viewer):
 
-- **List state:** fetch `GET /journaux`. Render cards, each showing a **cover
-  thumbnail** + **title**. The cover is logical page 1 (see transform),
-  rendered client-side from the PDF via pdfjs, lazily. Clicking a card opens the
-  viewer for that journal.
+- **Grid state:** fetch `GET /journaux`. Render a **responsive grid** of cover
+  cards (e.g. CSS grid with `auto-fill`/`minmax` so columns adapt to width;
+  single column on narrow mobile), each showing a **cover thumbnail** + **title**.
+  The cover is logical page 1 (see transform), rendered client-side from the PDF
+  via pdfjs, lazily. Clicking a card opens the viewer for that journal.
 - **Viewer state:** renders `<JournalViewer journal={selected} />` with a back
   button returning to the list.
 
