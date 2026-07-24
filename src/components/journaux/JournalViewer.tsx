@@ -1,8 +1,13 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 // react-pageflip ships its own types; default export is the flipbook component.
 import HTMLFlipBook from 'react-pageflip'
 import { loadJournalPages } from './pdfJournal'
 import type { Journal } from '../../api/journalApi'
+
+// Backdrop yellow. Blank facing pages are painted this exact color so they
+// vanish against it, making a real page appear to stand alone (soft-cover look).
+// Keep the backdrop and the blank pages referencing this single source.
+const COVER_BACKDROP = '#FFE218'
 
 interface Props {
   journal: Journal
@@ -43,11 +48,21 @@ export function JournalViewer({ journal, onBack }: Props) {
   useEffect(() => {
     const el = containerRef.current
     if (!el) return
-    const update = () => setBox({ w: el.clientWidth, h: el.clientHeight })
-    update()
-    const ro = new ResizeObserver(update)
+    const apply = () => setBox({ w: el.clientWidth, h: el.clientHeight })
+    apply() // initial measure, immediate
+    // Debounce: each observed change alters the size-derived key below and
+    // remounts the flipbook (re-decoding every page image), so coalesce a
+    // drag-resize into a single settle.
+    let timer: ReturnType<typeof setTimeout> | undefined
+    const ro = new ResizeObserver(() => {
+      clearTimeout(timer)
+      timer = setTimeout(apply, 150)
+    })
     ro.observe(el)
-    return () => ro.disconnect()
+    return () => {
+      clearTimeout(timer)
+      ro.disconnect()
+    }
   }, [])
 
   // Fit the book inside the container (leave room for the toolbar + padding).
@@ -57,8 +72,8 @@ export function JournalViewer({ journal, onBack }: Props) {
   let pageH = availH
   let pageW = pageH * aspect
   if (pageW * 2 > availW) {
-    pageW = Math.floor(availW / 2)
-    pageH = Math.floor(pageW / aspect)
+    pageW = availW / 2
+    pageH = pageW / aspect
   }
   pageW = Math.floor(pageW)
   pageH = Math.floor(pageH)
@@ -66,15 +81,12 @@ export function JournalViewer({ journal, onBack }: Props) {
   // Show page 1 alone, then inner spreads, then the last page alone — while
   // keeping every page soft (paper-bend). showCover would give the layout but
   // forces the cover pages rigid (hardcover flip), so instead a leading blank
-  // puts page 1 on the right by itself, and trailing blank(s) pad to an even
-  // count so the final page also stands alone.
-  const bookPages: (string | null)[] | null = pages
-    ? (() => {
-        const arr: (string | null)[] = [null, ...pages]
-        while (arr.length % 2 !== 0) arr.push(null)
-        return arr
-      })()
-    : null
+  // puts page 1 on the right by itself, and a trailing blank pads even-length
+  // journals so the final page also stands alone.
+  const bookPages = useMemo<(string | null)[] | null>(
+    () => (pages ? (pages.length % 2 === 0 ? [null, ...pages, null] : [null, ...pages]) : null),
+    [pages]
+  )
 
   return (
     <div ref={containerRef} style={{ display: 'flex', flexDirection: 'column', height: '100%', minHeight: 0 }}>
@@ -105,7 +117,7 @@ export function JournalViewer({ journal, onBack }: Props) {
           justifyContent: 'center',
           overflow: 'hidden',
           padding: '16px',
-          background: '#FFE218',
+          background: COVER_BACKDROP,
           borderRadius: '0.5rem',
         }}
       >
@@ -149,15 +161,13 @@ export function JournalViewer({ journal, onBack }: Props) {
                 style={
                   src
                     ? { background: '#FFFEF5', border: '1px solid #2D2D2D', boxSizing: 'border-box' }
-                    : // Blank facing page: match the yellow backdrop with no
-                      // border so it disappears and the real page stands alone.
-                      { background: '#FFE218', border: 'none', boxSizing: 'border-box' }
+                    : // Blank facing page: match the backdrop with no border so it
+                      // disappears and the real page stands alone.
+                      { background: COVER_BACKDROP, border: 'none', boxSizing: 'border-box' }
                 }
               >
-                {src ? (
+                {src && (
                   <img src={src} alt={`Page ${i}`} style={{ width: '100%', height: '100%', display: 'block', objectFit: 'fill' }} />
-                ) : (
-                  <div style={{ width: '100%', height: '100%', background: '#FFE218' }} />
                 )}
               </div>
             ))}

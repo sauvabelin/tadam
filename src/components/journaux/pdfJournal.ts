@@ -62,14 +62,18 @@ function cropHalf(canvas: HTMLCanvasElement, side: 'left' | 'right'): string {
  */
 export async function loadJournalPages(url: string, scale = 2): Promise<string[]> {
   const pdf = await pdfjsLib.getDocument(url).promise
-  const halves: string[] = [] // [L0, R0, L1, R1, ...]
-  for (let p = 1; p <= pdf.numPages; p++) {
-    const canvas = await renderPageToCanvas(pdf, p, scale)
-    halves.push(cropHalf(canvas, 'left'))
-    halves.push(cropHalf(canvas, 'right'))
+  try {
+    const halves: string[] = [] // [L0, R0, L1, R1, ...]
+    for (let p = 1; p <= pdf.numPages; p++) {
+      const canvas = await renderPageToCanvas(pdf, p, scale)
+      halves.push(cropHalf(canvas, 'left'))
+      halves.push(cropHalf(canvas, 'right'))
+    }
+    // Returned data URLs are self-contained, so the proxy is safe to release.
+    return deimposeOrder(pdf.numPages).map((i) => halves[i])
+  } finally {
+    await pdf.destroy()
   }
-  const order = deimposeOrder(pdf.numPages)
-  return order.map((i) => halves[i])
 }
 
 /**
@@ -78,11 +82,12 @@ export async function loadJournalPages(url: string, scale = 2): Promise<string[]
  */
 export async function loadJournalCover(url: string, scale = 1.5): Promise<string> {
   const pdf = await pdfjsLib.getDocument(url).promise
-  const canvas = await renderPageToCanvas(pdf, 1, scale)
-  // deimposeOrder(pdf.numPages)[0] is the half index of logical page 1; for a
-  // booklet it is R0 (right half). Fall back to the left half for a single
-  // non-split page (sequential fallback puts logical 1 at L0).
-  const first = deimposeOrder(pdf.numPages)[0]
-  if (first === 0 && pdf.numPages % 2 !== 0) return cropHalf(canvas, 'left')
-  return cropHalf(canvas, 'right')
+  try {
+    const canvas = await renderPageToCanvas(pdf, 1, scale)
+    // Cover = logical page 1: the right half of page 1 for a booklet (even page
+    // count), or the left half in the odd-page sequential fallback.
+    return cropHalf(canvas, pdf.numPages % 2 !== 0 ? 'left' : 'right')
+  } finally {
+    await pdf.destroy()
+  }
 }
