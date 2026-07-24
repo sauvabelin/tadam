@@ -50,15 +50,14 @@ export function JournalViewer({ journal, onBack }: Props) {
     return () => ro.disconnect()
   }, [])
 
-  // Fit a single page inside the container (leave room for the toolbar).
-  const availH = Math.max(box.h - 64, 200)
-  const availW = Math.max(box.w, 200)
+  // Fit the book inside the container (leave room for the toolbar + padding).
+  // The book always renders as a two-page spread, so the pair must fit availW.
+  const availH = Math.max(box.h - 88, 200)
+  const availW = Math.max(box.w - 32, 200)
   let pageH = availH
   let pageW = pageH * aspect
-  // On wide screens a spread is 2 pages wide; keep the pair within the box.
-  const maxPairW = availW
-  if (pageW * 2 > maxPairW) {
-    pageW = Math.floor(maxPairW / 2)
+  if (pageW * 2 > availW) {
+    pageW = Math.floor(availW / 2)
     pageH = Math.floor(pageW / aspect)
   }
   pageW = Math.floor(pageW)
@@ -84,7 +83,19 @@ export function JournalViewer({ journal, onBack }: Props) {
         </button>
       </div>
 
-      <div style={{ flex: 1, minHeight: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
+      <div
+        style={{
+          flex: 1,
+          minHeight: 0,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          overflow: 'hidden',
+          padding: '16px',
+          background: '#FFE218',
+          borderRadius: '0.5rem',
+        }}
+      >
         {error ? (
           <div style={{ color: '#dc2626' }}>Erreur lors du chargement du journal.</div>
         ) : !pages ? (
@@ -103,9 +114,9 @@ export function JournalViewer({ journal, onBack }: Props) {
             maxHeight={10000}
             showCover
             drawShadow
-            maxShadowOpacity={0.4}
+            maxShadowOpacity={0.5}
             flippingTime={700}
-            usePortrait
+            usePortrait={false}
             startPage={0}
             startZIndex={0}
             autoSize={false}
@@ -119,7 +130,11 @@ export function JournalViewer({ journal, onBack }: Props) {
             className=""
           >
             {pages.map((src, i) => (
-              <div key={i} style={{ background: '#FFFEF5', border: '1px solid #ECE5DE' }}>
+              <div
+                key={i}
+                data-density="soft"
+                style={{ background: '#FFFEF5', border: '1px solid #2D2D2D', boxSizing: 'border-box' }}
+              >
                 <img src={src} alt={`Page ${i + 1}`} style={{ width: '100%', height: '100%', display: 'block', objectFit: 'fill' }} />
               </div>
             ))}
