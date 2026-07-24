@@ -63,6 +63,19 @@ export function JournalViewer({ journal, onBack }: Props) {
   pageW = Math.floor(pageW)
   pageH = Math.floor(pageH)
 
+  // Show page 1 alone, then inner spreads, then the last page alone — while
+  // keeping every page soft (paper-bend). showCover would give the layout but
+  // forces the cover pages rigid (hardcover flip), so instead a leading blank
+  // puts page 1 on the right by itself, and trailing blank(s) pad to an even
+  // count so the final page also stands alone.
+  const bookPages: (string | null)[] | null = pages
+    ? (() => {
+        const arr: (string | null)[] = [null, ...pages]
+        while (arr.length % 2 !== 0) arr.push(null)
+        return arr
+      })()
+    : null
+
   return (
     <div ref={containerRef} style={{ display: 'flex', flexDirection: 'column', height: '100%', minHeight: 0 }}>
       <div style={{ flexShrink: 0, padding: '0.5rem 0.75rem' }}>
@@ -98,7 +111,7 @@ export function JournalViewer({ journal, onBack }: Props) {
       >
         {error ? (
           <div style={{ color: '#dc2626' }}>Erreur lors du chargement du journal.</div>
-        ) : !pages ? (
+        ) : !bookPages ? (
           <div style={{ color: '#6b7280' }}>Chargement…</div>
         ) : (
           // key forces a fresh flipbook when dimensions change (HTMLFlipBook is
@@ -112,7 +125,7 @@ export function JournalViewer({ journal, onBack }: Props) {
             maxWidth={10000}
             minHeight={0}
             maxHeight={10000}
-            showCover
+            showCover={false}
             drawShadow
             maxShadowOpacity={0.5}
             flippingTime={700}
@@ -129,13 +142,17 @@ export function JournalViewer({ journal, onBack }: Props) {
             style={{}}
             className=""
           >
-            {pages.map((src, i) => (
+            {bookPages.map((src, i) => (
               <div
                 key={i}
                 data-density="soft"
                 style={{ background: '#FFFEF5', border: '1px solid #2D2D2D', boxSizing: 'border-box' }}
               >
-                <img src={src} alt={`Page ${i + 1}`} style={{ width: '100%', height: '100%', display: 'block', objectFit: 'fill' }} />
+                {src ? (
+                  <img src={src} alt={`Page ${i}`} style={{ width: '100%', height: '100%', display: 'block', objectFit: 'fill' }} />
+                ) : (
+                  <div style={{ width: '100%', height: '100%', background: '#FFFEF5' }} />
+                )}
               </div>
             ))}
           </HTMLFlipBook>

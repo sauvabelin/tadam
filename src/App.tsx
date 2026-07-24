@@ -6,6 +6,7 @@ import { ModalProvider, useModal } from './context/ModalContext'
 import { AuthProvider } from './context/AuthContext'
 import { Modal } from './components/Modal'
 import { modalContentRegistry } from './components/modalContent'
+import { LoadingSpinner } from './components/LoadingSpinner'
 
 // Lazy load admin page - only downloaded when accessing /admin route
 const AdminPage = lazy(() =>
@@ -43,7 +44,25 @@ function ModalContainer() {
       onClose={closeModal}
       clickOrigin={clickOrigin}
     >
-      {openModal && modalContentRegistry[openModal]()}
+      {openModal && (
+        <Suspense
+          fallback={
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                minHeight: '200px',
+                height: '100%',
+              }}
+            >
+              <LoadingSpinner size={60} color="#902212" />
+            </div>
+          }
+        >
+          {modalContentRegistry[openModal]()}
+        </Suspense>
+      )}
     </Modal>
   )
 }
