@@ -146,12 +146,18 @@ export function JournalViewer({ journal, onBack }: Props) {
               <div
                 key={i}
                 data-density="soft"
-                style={{ background: '#FFE218', border: '1px solid #2D2D2D', boxSizing: 'border-box' }}
+                style={
+                  src
+                    ? { background: '#FFFEF5', border: '1px solid #2D2D2D', boxSizing: 'border-box' }
+                    : // Blank facing page: match the yellow backdrop with no
+                      // border so it disappears and the real page stands alone.
+                      { background: '#FFE218', border: 'none', boxSizing: 'border-box' }
+                }
               >
                 {src ? (
                   <img src={src} alt={`Page ${i}`} style={{ width: '100%', height: '100%', display: 'block', objectFit: 'fill' }} />
                 ) : (
-                  <div style={{ width: '100%', height: '100%', background: '#FFFEF5' }} />
+                  <div style={{ width: '100%', height: '100%', background: '#FFE218' }} />
                 )}
               </div>
             ))}
