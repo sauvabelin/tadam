@@ -146,7 +146,7 @@ export function JournalViewer({ journal, onBack }: Props) {
               <div
                 key={i}
                 data-density="soft"
-                style={{ background: '#FFFEF5', border: '1px solid #2D2D2D', boxSizing: 'border-box' }}
+                style={{ background: '#FFE218', border: '1px solid #2D2D2D', boxSizing: 'border-box' }}
               >
                 {src ? (
                   <img src={src} alt={`Page ${i}`} style={{ width: '100%', height: '100%', display: 'block', objectFit: 'fill' }} />
